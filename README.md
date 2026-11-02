@@ -1,4 +1,4 @@
-# Vérifia
+# Hoe Aona
 
 Application web responsive d'analyse de la désinformation. Elle reçoit un texte, une image, un document, un audio ou des liens. Elle repère les affirmations vérifiables et cherche des preuves auprès de sources fiables via un serveur MCP. Elle écarte les sources générées par IA, puis donne trois scores sur 10 (source, véracité des données, part d'IA) et un score global. Chaque argument renvoie à une preuve (lien, extrait, image, statistique datée), et un article prêt à publier est proposé.
 
