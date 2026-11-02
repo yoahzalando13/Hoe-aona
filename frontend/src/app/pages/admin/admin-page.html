@@ -8,7 +8,7 @@
     <button type="button" role="tab" [class.on]="tab() === 'overview'" [attr.aria-selected]="tab() === 'overview'" (click)="open('overview')">{{ 'Vue d’ensemble' | t }}</button>
     <button type="button" role="tab" [class.on]="tab() === 'users'" [attr.aria-selected]="tab() === 'users'" (click)="open('users')">{{ 'Comptes' | t }}</button>
     <button type="button" role="tab" [class.on]="tab() === 'posts'" [attr.aria-selected]="tab() === 'posts'" (click)="open('posts')">{{ 'Modération' | t }}</button>
-    <a class="tab-link" routerLink="/sources">{{ 'Sources officielles' | t }}</a>
+    <a class="tab-link" routerLink="/sources-officielles">{{ 'Sources officielles' | t }}</a>
   </div>
 
   @if (error()) { <p class="error-box" role="alert">{{ error() }}</p> }

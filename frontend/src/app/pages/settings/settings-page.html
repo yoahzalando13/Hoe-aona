@@ -3,7 +3,7 @@
 
   @if (auth.user(); as me) {
     <h2 class="section-label">{{ 'Compte' | t }}</h2>
-    <div class="list">
+    <div class="list account-list">
       <a class="opt account" [routerLink]="['/profil', me.id]">
         <span class="ico tone-blue"><app-icon name="user" [size]="18" /></span>
         <span class="lb">{{ me.display_name }}<small>{{ me.email }} · {{ me.role === 'admin' ? ('Administrateur' | t) : ('Personnel média' | t) }}</small></span>

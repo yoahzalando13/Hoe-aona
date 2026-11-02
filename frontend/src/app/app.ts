@@ -30,6 +30,7 @@ export class App {
       { path: '/analyser', label: t('Analyser'), icon: 'add', primary: true },
       { path: '/resultat', label: t('Résultat'), icon: 'gauge', primary: true },
       { path: '/statistiques', label: t('Statistiques'), icon: 'chart', primary: true },
+      { path: '/sources-officielles', label: t('Sources officielles'), icon: 'users', primary: false },
       { path: '/espace', label: t('Mon espace'), icon: 'database', primary: false },
       { path: '/parametres', label: t('Paramètres'), icon: 'settings', primary: false },
     ];

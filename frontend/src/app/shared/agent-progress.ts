@@ -16,8 +16,6 @@ const AGENTS: Agent[] = [
   { key: 'redacteur', name: t('Rédacteur'), role: t('Écrit l’article suggéré'), icon: 'edit', from: 95, to: 100 },
 ];
 
-type AgentState = 'todo' | 'working' | 'done' | 'error';
-
 @Component({
   selector: 'app-agent-progress',
   imports: [Icon, TPipe],
@@ -27,16 +25,29 @@ type AgentState = 'todo' | 'working' | 'done' | 'error';
 })
 export class AgentProgress {
   readonly analysis = input.required<AnalysisOut>();
-  /** `live` : analyse en cours (équipe + journal) ; `log` : journal seul, une fois l'analyse terminée. */
+  /** `live` : étapes révélées une à une pendant l'analyse ; `log` : journal complet, une fois l'analyse terminée. */
   readonly mode = input<'live' | 'log'>('live');
 
   private readonly logBox = viewChild<ElementRef<HTMLElement>>('logBox');
+  private readonly stepsBox = viewChild<ElementRef<HTMLElement>>('stepsBox');
+  /** Nombre d'étapes déjà affichées : en direct, elles apparaissent une par une. */
+  private readonly revealed = signal(0);
+  private revealTimer: ReturnType<typeof setInterval> | null = null;
   private readonly now = signal(Date.now());
   protected readonly follow = signal(true);
-  protected readonly agents = AGENTS;
 
   protected readonly events = computed(() => this.analysis().events ?? []);
   protected readonly running = computed(() => this.analysis().status === 'pending' || this.analysis().status === 'running');
+
+  /** Étapes visibles en direct (leur statut, lui, suit toujours la dernière mise à jour du serveur). */
+  protected readonly shown = computed(() => this.events().slice(0, this.revealed()));
+  /** Étape portant les trois points animés : la dernière affichée encore en cours, sinon la dernière affichée. */
+  protected readonly activeIndex = computed(() => {
+    const list = this.shown();
+    if (!this.running()) return -1;
+    for (let i = list.length - 1; i >= 0; i--) if (list[i].status === 'running') return i;
+    return list.length - 1;
+  });
 
   protected readonly elapsed = computed(() => {
     const a = this.analysis();
@@ -53,47 +64,36 @@ export class AgentProgress {
     return Math.max(5, Math.round((t * (100 - p)) / p));
   });
 
-  protected readonly toolStats = computed(() => {
-    const calls = this.events().filter((e) => e.tool);
-    return {
-      total: calls.length,
-      ok: calls.filter((e) => e.status === 'done').length,
-      failed: calls.filter((e) => e.status === 'error').length,
-      active: calls.filter((e) => e.status === 'running').length,
-    };
-  });
-
-  protected readonly claimsFound = computed(() =>
-    this.events().filter((e) => e.agent === 'extracteur' && e.status === 'info').length);
-
   constructor() {
     const timer = setInterval(() => this.now.set(Date.now()), 1000);
-    inject(DestroyRef).onDestroy(() => clearInterval(timer));
+    inject(DestroyRef).onDestroy(() => {
+      clearInterval(timer);
+      if (this.revealTimer) clearInterval(this.revealTimer);
+    });
+    // Révélation progressive : une étape toutes les 350 ms tant qu'il en reste à afficher.
+    effect(() => {
+      const total = this.events().length;
+      if (this.mode() === 'log') { this.revealed.set(total); return; }
+      if (this.revealed() > total) this.revealed.set(total);
+      if (this.revealed() < total && !this.revealTimer) {
+        this.revealTimer = setInterval(() => {
+          if (this.revealed() >= this.events().length) {
+            clearInterval(this.revealTimer!);
+            this.revealTimer = null;
+            return;
+          }
+          this.revealed.update((n) => n + 1);
+          const box = this.stepsBox()?.nativeElement;
+          if (box && this.follow()) queueMicrotask(() => box.scrollTop = box.scrollHeight);
+        }, 350);
+      }
+    });
     // Défilement automatique du journal tant que l'utilisateur n'est pas remonté le lire.
     effect(() => {
       this.events();
       const box = this.logBox()?.nativeElement;
       if (box && this.follow() && this.mode() === 'live') queueMicrotask(() => box.scrollTop = box.scrollHeight);
     });
-  }
-
-  protected state(agent: Agent): AgentState {
-    const mine = this.events().filter((e) => e.agent === agent.key);
-    const p = this.analysis().progress;
-    if (this.analysis().status === 'error' && mine.some((e) => e.status === 'error')) return 'error';
-    if (mine.some((e) => e.status === 'running')) return 'working';
-    if (p >= agent.to || this.analysis().status === 'done') return 'done';
-    if (p >= agent.from && this.running()) return 'working';
-    return mine.length ? 'done' : 'todo';
-  }
-
-  /** Dernière action d'un agent, pour la ligne d'activité sous son nom. */
-  protected activity(agent: Agent): string {
-    const mine = this.events().filter((e) => e.agent === agent.key);
-    const live = [...mine].reverse().find((e) => e.status === 'running');
-    const last = live ?? mine[mine.length - 1];
-    if (!last) return agent.role;
-    return last.detail && !live ? `${last.message} · ${last.detail}` : last.message;
   }
 
   protected agentName(key: AgentKey): string {

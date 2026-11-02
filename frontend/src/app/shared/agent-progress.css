@@ -79,3 +79,35 @@
 @media (prefers-reduced-motion: reduce) {
   .bar i::after, .agent.working .avatar, .ev { animation: none; }
 }
+
+/* ---------- Affichage en direct, façon Claude : trois points et étapes une par une ---------- */
+.live-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.live-head h2 { font-size: 17px; }
+.live-head .meta { font-variant-numeric: tabular-nums; }
+.bar.thin { height: 3px; margin: 12px 0 14px; }
+.bar.thin i::after { display: none; }
+.steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-height: 380px; overflow-y: auto; overscroll-behavior: contain; }
+.stp { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; align-items: start; padding: 5px 2px; animation: appear .35s ease-out both; }
+.stp.sub { padding-left: 22px; }
+.stp .mk { height: 20px; display: grid; place-items: center; color: var(--ink3); }
+.stp.done .mk { color: var(--good); }
+.stp.error .mk { color: var(--mid); }
+.stp .tx { min-width: 0; display: flex; flex-direction: column; }
+.stp .msg { font-size: 14px; color: var(--ink2); overflow-wrap: anywhere; }
+.stp.sub .msg { font-size: 13px; }
+.stp .det { font-size: 12px; color: var(--ink3); overflow-wrap: anywhere; }
+.stp.error .det { color: var(--mid); }
+.stp.active .msg { color: var(--ink); font-weight: 500; }
+.ring { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--ink3); }
+
+.dots { display: inline-flex; gap: 3px; align-items: center; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--indigo); animation: dot 1.2s ease-in-out infinite; }
+.dots i:nth-child(2) { animation-delay: .16s; }
+.dots i:nth-child(3) { animation-delay: .32s; }
+
+@keyframes dot { 0%, 80%, 100% { opacity: .25; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+@keyframes appear { from { opacity: 0; transform: translateY(6px); } }
+@media (prefers-reduced-motion: reduce) {
+  .stp { animation: none; }
+  .dots i { animation-duration: 2.4s; transform: none; }
+}
