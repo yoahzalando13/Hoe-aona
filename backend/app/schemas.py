@@ -107,7 +107,7 @@ class Claim(BaseModel):
     truth_score: float = 5.0
     evidence_weight: float = 0.0
     verdict: ClaimVerdict = "non_verifiable"
-    verdict_label: str = "Non vérifiable"
+    verdict_label: str = "Non Hoe-aona?ble"
     conclusion: str = ""
     arguments_for: list[str] = []
     arguments_against: list[str] = []

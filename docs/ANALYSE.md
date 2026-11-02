@@ -1,21 +1,21 @@
-# Vérifia : analyse du projet
+# Hoe-aona? : analyse du projet
 
 ## 1. Le besoin principal
 
 La désinformation circule surtout sous forme de contenus courts et partagés sans contexte : captures d'écran, messages vocaux, chiffres repris sans source, images retouchées ou entièrement générées par IA. À Madagascar comme ailleurs, ces contenus passent d'abord par les réseaux sociaux et les messageries, où l'origine se perd en quelques partages.
 
-Le problème n'est pas l'absence d'informations fiables. Les statistiques officielles, les vérifications des fact-checkers et les dépêches existent. Le problème est le coût de la vérification : pour un seul message, il faut identifier les affirmations vérifiables, chercher dans plusieurs bases, juger la fiabilité de chaque source, comparer les chiffres à la donnée officielle la plus récente, puis rédiger une réponse claire. Ce travail prend une à deux heures à un journaliste entraîné.
+Le problème n'est pas l'absence d'informations fiables. Les statistiques officielles, les vérifications des fact-checkers et les dépêches existent. Le problème est le coût de la vérification : pour un seul message, il faut identifier les affirmations Hoe-aona?bles, chercher dans plusieurs bases, juger la fiabilité de chaque source, comparer les chiffres à la donnée officielle la plus récente, puis rédiger une réponse claire. Ce travail prend une à deux heures à un journaliste entraîné.
 
-**Vérifia répond à ce besoin : réduire le temps entre « je reçois un contenu douteux » et « je publie une vérification sourcée » à quelques minutes, sans sacrifier la traçabilité.** Chaque score est accompagné de ses preuves (liens, extraits, images, statistiques datées), et l'article proposé ne contient que ce que les preuves établissent.
+**Hoe-aona? répond à ce besoin : réduire le temps entre « je reçois un contenu douteux » et « je publie une vérification sourcée » à quelques minutes, sans sacrifier la traçabilité.** Chaque score est accompagné de ses preuves (liens, extraits, images, statistiques datées), et l'article proposé ne contient que ce que les preuves établissent.
 
 ## 2. Utilisateurs visés
 
-| Profil | Ce qu'il apporte | Ce qu'il attend |
-|---|---|---|
-| Journaliste, fact-checker | Un post, un PDF, un audio reçu en rédaction | Des preuves citables et un brouillon d'article publiable |
-| Enseignant, étudiant | Un texte ou une image à étudier | Comprendre pourquoi c'est vrai ou faux |
-| Citoyen, modérateur de groupe | Une capture d'écran, un message vocal | Un verdict simple, vite, avec un lien à partager |
-| ONG, communicant institutionnel | Une rumeur qui vise leur domaine | Les chiffres officiels à jour pour répondre |
+| Profil                          | Ce qu'il apporte                            | Ce qu'il attend                                          |
+| ------------------------------- | ------------------------------------------- | -------------------------------------------------------- |
+| Journaliste, fact-checker       | Un post, un PDF, un audio reçu en rédaction | Des preuves citables et un brouillon d'article publiable |
+| Enseignant, étudiant            | Un texte ou une image à étudier             | Comprendre pourquoi c'est vrai ou faux                   |
+| Citoyen, modérateur de groupe   | Une capture d'écran, un message vocal       | Un verdict simple, vite, avec un lien à partager         |
+| ONG, communicant institutionnel | Une rumeur qui vise leur domaine            | Les chiffres officiels à jour pour répondre              |
 
 ## 3. Exigences fonctionnelles
 
@@ -23,7 +23,7 @@ Le problème n'est pas l'absence d'informations fiables. Les statistiques offici
 2. **Extraction** : OCR et description des images, transcription audio, lecture des documents et des pages web.
 3. **Détection de contenu IA** : signatures explicites (C2PA, IPTC `trainedAlgorithmicMedia`, paramètres Stable Diffusion/ComfyUI, logiciels générateurs dans l'EXIF ou les métadonnées PDF/DOCX, formules d'assistant, caractères invisibles), stylométrie, et détecteur externe optionnel pour les images.
 4. **Exclusion des sources générées par IA** : toute page de preuve dont la probabilité IA dépasse le seuil réglé est retirée du calcul et listée à part avec la raison.
-5. **Identification des affirmations vérifiables** (chiffres, événements, citations, faits sanitaires).
+5. **Identification des affirmations Hoe-aona?bles** (chiffres, événements, citations, faits sanitaires).
 6. **Recherche de preuves via MCP** : fact-checks existants, encyclopédie, actualité mondiale, web, statistiques officielles.
 7. **Évaluation** : pour chaque preuve, position (confirme, contredit, contexte), confiance et justification. Pour chaque affirmation, arguments pour et contre, chacun relié à une preuve.
 8. **Scores sur 10** : source, véracité des données, part d'IA, et score global pondéré.
@@ -64,15 +64,15 @@ Le backend lance un **serveur MCP** (`app/mcp/server.py`, FastMCP) qui expose ch
 
 ### Déroulé d'une analyse
 
-| Étape | Progression | Détail |
-|---|---|---|
-| Lecture des données | 5 % | Extraction du texte de chaque entrée, lecture des liens fournis |
-| Signatures IA | 20 % | Analyse locale, puis détecteur externe si activé |
-| Affirmations | 30 % | Le LLM isole jusqu'à 5 affirmations vérifiables ; repli heuristique sans LLM |
-| Recherche de preuves | 45 % | Appels MCP en parallèle, lecture des pages, exclusion des pages IA |
-| Évaluation | 75 % | Position de chaque preuve, arguments pour et contre, comparaison chiffrée |
-| Scores | 88 % | Calcul décrit ci-dessous |
-| Article | 95 % | Rédaction contrainte par les preuves, repli sur un modèle sans LLM |
+| Étape                | Progression | Détail                                                                         |
+| -------------------- | ----------- | ------------------------------------------------------------------------------ |
+| Lecture des données  | 5 %         | Extraction du texte de chaque entrée, lecture des liens fournis                |
+| Signatures IA        | 20 %        | Analyse locale, puis détecteur externe si activé                               |
+| Affirmations         | 30 %        | Le LLM isole jusqu'à 5 affirmations Hoe-aona?bles ; repli heuristique sans LLM |
+| Recherche de preuves | 45 %        | Appels MCP en parallèle, lecture des pages, exclusion des pages IA             |
+| Évaluation           | 75 %        | Position de chaque preuve, arguments pour et contre, comparaison chiffrée      |
+| Scores               | 88 %        | Calcul décrit ci-dessous                                                       |
+| Article              | 95 %        | Rédaction contrainte par les preuves, repli sur un modèle sans LLM             |
 
 ## 6. Méthode de calcul des scores
 
@@ -84,16 +84,16 @@ Le backend lance un **serveur MCP** (`app/mcp/server.py`, FastMCP) qui expose ch
 score = 10 × (S + 0,3) / (S + R + 0,6)
 ```
 
-Sans preuve, le score reste à 5 et le verdict est « non vérifiable ». Les verdicts : vrai (≥ 8), plutôt vrai (≥ 6), mitigé (entre 4 et 6), plutôt faux (≥ 2), faux (< 2).
+Sans preuve, le score reste à 5 et le verdict est « non Hoe-aona?ble ». Les verdicts : vrai (≥ 8), plutôt vrai (≥ 6), mitigé (entre 4 et 6), plutôt faux (≥ 2), faux (< 2).
 
 **Critères affichés.**
 
-| Critère | Calcul |
-|---|---|
-| Source | 55 % fiabilité de l'origine fournie (0,45 si aucune origine) + 45 % fiabilité moyenne des preuves décisives |
-| Véracité des données | Moyenne des affirmations, pondérée par la quantité de preuves |
-| Fait par IA | 10 × (1 − probabilité IA du contenu soumis) |
-| Global | Moyenne pondérée, 40/40/20 par défaut, réglable |
+| Critère              | Calcul                                                                                                      |
+| -------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Source               | 55 % fiabilité de l'origine fournie (0,45 si aucune origine) + 45 % fiabilité moyenne des preuves décisives |
+| Véracité des données | Moyenne des affirmations, pondérée par la quantité de preuves                                               |
+| Fait par IA          | 10 × (1 − probabilité IA du contenu soumis)                                                                 |
+| Global               | Moyenne pondérée, 40/40/20 par défaut, réglable                                                             |
 
 Garde-fous : si la véracité est inférieure à 4, le score global est plafonné à 4,4 (une information fausse ne peut pas être « fiable ») ; si la probabilité IA dépasse 0,85, il est plafonné à 5,9.
 
@@ -101,17 +101,17 @@ Verdict global : fiable (≥ 8), plutôt fiable (≥ 6,5), à vérifier (≥ 4,5
 
 ## 7. API et services gratuits retenus
 
-| Service | Rôle | Clé | Offre gratuite constatée (oct. 2026) |
-|---|---|---|---|
-| Google Fact Check Tools | Fact-checks existants (texte et image) | Oui, gratuite | Quota Google Cloud standard |
-| Wikipedia (MediaWiki + REST) | Contexte encyclopédique, images | Non | Usage raisonnable avec User-Agent |
-| GDELT DOC 2.0 | Actualité mondiale, 65 langues, 3 derniers mois | Non | Libre, citation de GDELT demandée |
-| Tavily | Recherche web pour agents | Oui | 1 000 crédits par mois |
-| Banque mondiale | Statistiques officielles, valeur la plus récente | Non | Libre |
-| Groq | LLM rapide, vision, Whisper | Oui | Limité par débit, sans carte |
-| Gemini (AI Studio) | LLM principal, compatible OpenAI | Oui | Limité par débit, sans carte |
-| Sightengine | Détection d'images générées | Oui | Environ 400 vérifications par mois |
-| OCR.space | OCR de secours | Oui | Clé gratuite |
+| Service                      | Rôle                                             | Clé           | Offre gratuite constatée (oct. 2026) |
+| ---------------------------- | ------------------------------------------------ | ------------- | ------------------------------------ |
+| Google Fact Check Tools      | Fact-checks existants (texte et image)           | Oui, gratuite | Quota Google Cloud standard          |
+| Wikipedia (MediaWiki + REST) | Contexte encyclopédique, images                  | Non           | Usage raisonnable avec User-Agent    |
+| GDELT DOC 2.0                | Actualité mondiale, 65 langues, 3 derniers mois  | Non           | Libre, citation de GDELT demandée    |
+| Tavily                       | Recherche web pour agents                        | Oui           | 1 000 crédits par mois               |
+| Banque mondiale              | Statistiques officielles, valeur la plus récente | Non           | Libre                                |
+| Groq                         | LLM rapide, vision, Whisper                      | Oui           | Limité par débit, sans carte         |
+| Gemini (AI Studio)           | LLM principal, compatible OpenAI                 | Oui           | Limité par débit, sans carte         |
+| Sightengine                  | Détection d'images générées                      | Oui           | Environ 400 vérifications par mois   |
+| OCR.space                    | OCR de secours                                   | Oui           | Clé gratuite                         |
 
 Les quotas changent régulièrement ; ils sont à revérifier avant la mise en production.
 

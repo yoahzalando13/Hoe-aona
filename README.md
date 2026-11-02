@@ -1,6 +1,6 @@
 # Hoe Aona
 
-Application web responsive d'analyse de la désinformation. Elle reçoit un texte, une image, un document, un audio ou des liens. Elle repère les affirmations vérifiables et cherche des preuves auprès de sources fiables via un serveur MCP. Elle écarte les sources générées par IA, puis donne trois scores sur 10 (source, véracité des données, part d'IA) et un score global. Chaque argument renvoie à une preuve (lien, extrait, image, statistique datée), et un article prêt à publier est proposé.
+Application web responsive d'analyse de la désinformation. Elle reçoit un texte, une image, un document, un audio ou des liens. Elle repère les affirmations Hoe-aona?bles et cherche des preuves auprès de sources fiables via un serveur MCP. Elle écarte les sources générées par IA, puis donne trois scores sur 10 (source, véracité des données, part d'IA) et un score global. Chaque argument renvoie à une preuve (lien, extrait, image, statistique datée), et un article prêt à publier est proposé.
 
 L'analyse du besoin, la méthode de calcul et les limites sont décrites dans [docs/ANALYSE.md](docs/ANALYSE.md).
 
@@ -56,29 +56,29 @@ L'application complète est servie sur http://localhost:8000.
 
 Sans aucune clé, l'application fonctionne en mode dégradé. Wikipedia, GDELT et la Banque mondiale restent actifs, les affirmations sont repérées par heuristique et l'article suit un modèle fixe. Une clé LLM (Gemini ou Groq) change nettement la qualité des résultats.
 
-| Variable | Service | Rôle | Inscription |
-|---|---|---|---|
-| `GEMINI_API_KEY` | Gemini (AI Studio) | Analyse, vision, rédaction | https://aistudio.google.com/apikey |
-| `GROQ_API_KEY` | Groq | Analyse, vision, transcription audio | https://console.groq.com/keys |
-| `GOOGLE_FACTCHECK_API_KEY` | Google Fact Check Tools | Fact-checks publiés | Console Google Cloud, activer « Fact Check Tools API » |
-| `TAVILY_API_KEY` | Tavily | Recherche web | https://app.tavily.com |
-| `SIGHTENGINE_API_USER` / `SECRET` | Sightengine | Détection d'images générées | https://sightengine.com |
-| `OCR_SPACE_API_KEY` | OCR.space | OCR de secours | https://ocr.space/ocrapi |
+| Variable                          | Service                 | Rôle                                 | Inscription                                            |
+| --------------------------------- | ----------------------- | ------------------------------------ | ------------------------------------------------------ |
+| `GEMINI_API_KEY`                  | Gemini (AI Studio)      | Analyse, vision, rédaction           | https://aistudio.google.com/apikey                     |
+| `GROQ_API_KEY`                    | Groq                    | Analyse, vision, transcription audio | https://console.groq.com/keys                          |
+| `GOOGLE_FACTCHECK_API_KEY`        | Google Fact Check Tools | Fact-checks publiés                  | Console Google Cloud, activer « Fact Check Tools API » |
+| `TAVILY_API_KEY`                  | Tavily                  | Recherche web                        | https://app.tavily.com                                 |
+| `SIGHTENGINE_API_USER` / `SECRET` | Sightengine             | Détection d'images générées          | https://sightengine.com                                |
+| `OCR_SPACE_API_KEY`               | OCR.space               | OCR de secours                       | https://ocr.space/ocrapi                               |
 
 La transcription audio nécessite `GROQ_API_KEY`. L'état de chaque service est visible dans la page Paramètres.
 
 ## API
 
-| Méthode | Route | Rôle |
-|---|---|---|
-| POST | `/api/analyses` | Lance une analyse (multipart : `text`, `urls` en JSON, `files`) ; répond 202 |
-| GET | `/api/analyses/{id}` | État, progression et résultat |
-| GET | `/api/analyses?q=&verdict=&limit=&offset=` | Historique |
-| DELETE | `/api/analyses/{id}` | Supprime l'analyse et ses fichiers |
-| POST | `/api/analyses/{id}/article` | Rédige à nouveau l'article |
-| GET | `/api/analyses/{id}/article.md` ou `.html` | Export de l'article |
-| GET / PUT | `/api/settings` | Préférences |
-| GET | `/api/health` | Mode MCP, outils, services configurés |
+| Méthode   | Route                                      | Rôle                                                                         |
+| --------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
+| POST      | `/api/analyses`                            | Lance une analyse (multipart : `text`, `urls` en JSON, `files`) ; répond 202 |
+| GET       | `/api/analyses/{id}`                       | État, progression et résultat                                                |
+| GET       | `/api/analyses?q=&verdict=&limit=&offset=` | Historique                                                                   |
+| DELETE    | `/api/analyses/{id}`                       | Supprime l'analyse et ses fichiers                                           |
+| POST      | `/api/analyses/{id}/article`               | Rédige à nouveau l'article                                                   |
+| GET       | `/api/analyses/{id}/article.md` ou `.html` | Export de l'article                                                          |
+| GET / PUT | `/api/settings`                            | Préférences                                                                  |
+| GET       | `/api/health`                              | Mode MCP, outils, services configurés                                        |
 
 ## Le serveur MCP
 

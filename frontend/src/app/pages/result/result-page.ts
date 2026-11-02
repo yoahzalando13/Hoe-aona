@@ -180,7 +180,7 @@ export class ResultPage {
     const a = this.analysis();
     const r = this.result();
     if (!a || !r) return;
-    const data = { title: `Vérifia : ${r.verdict_label}`, text: `${a.title} : ${formatScore(r.global_score)}/10`, url: location.href };
+    const data = { title: `Hoe-aona? : ${r.verdict_label}`, text: `${a.title} : ${formatScore(r.global_score)}/10`, url: location.href };
     try {
       if (navigator.share) await navigator.share(data);
       else { await navigator.clipboard.writeText(data.url); this.flash('Lien copié'); }

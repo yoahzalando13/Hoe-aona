@@ -1,4 +1,4 @@
-"""Repère les affirmations factuelles vérifiables dans le contenu soumis."""
+"""Repère les affirmations factuelles Hoe-aona?bles dans le contenu soumis."""
 from __future__ import annotations
 
 import logging
@@ -12,7 +12,7 @@ from .textutils import keywords, numbers_in, split_sentences, truncate
 log = logging.getLogger("hoe-aona.claims")
 
 SYSTEM = (
-    "Tu es un fact-checker professionnel. Tu identifies les affirmations vérifiables, sans juger leur "
+    "Tu es un fact-checker professionnel. Tu identifies les affirmations Hoe-aona?bles, sans juger leur "
     "véracité à cette étape. Tu réponds uniquement avec un objet JSON valide."
 )
 
@@ -29,7 +29,7 @@ class ClaimDraft:
 
 
 def _prompt(text: str, max_claims: int, default_country: str) -> str:
-    return f"""Extrais au maximum {max_claims} affirmations factuelles VÉRIFIABLES du contenu ci-dessous :
+    return f"""Extrais au maximum {max_claims} affirmations factuelles Hoe-aona?BLES du contenu ci-dessous :
 chiffres, événements datés, citations attribuées, faits scientifiques ou sanitaires. Ignore les opinions,
 les questions et les formules vagues. Classe-les de la plus importante à la moins importante.
 
@@ -100,7 +100,7 @@ async def extract_claims(text: str, llm: LLMClient, max_claims: int, default_cou
                 ))
             if drafts:
                 return drafts, data.get("topic", ""), data.get("summary", "")
-            warnings.append("Le LLM n'a trouvé aucune affirmation vérifiable ; repli heuristique utilisé")
+            warnings.append("Le LLM n'a trouvé aucune affirmation Hoe-aona?ble ; repli heuristique utilisé")
         except Exception as exc:  # noqa: BLE001
             log.warning("Extraction LLM échouée : %s", exc)
             warnings.append("Extraction des affirmations par LLM indisponible ; repli heuristique utilisé")

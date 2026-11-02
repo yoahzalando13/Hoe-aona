@@ -31,7 +31,7 @@ async def lifespan(app: FastAPI):
     await gateway.stop()
 
 
-app = FastAPI(title="Vérifia API", version="1.0.0", lifespan=lifespan,
+app = FastAPI(title="Hoe-aona? API", version="1.0.0", lifespan=lifespan,
               description="Analyse de la désinformation : sources, véracité, contenus générés par IA.")
 app.add_middleware(CORSMiddleware, allow_origins=get_settings().cors_origins,
                    allow_methods=["*"], allow_headers=["*"])

@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    app_name: str = "Vérifia"
+    app_name: str = "Hoe-aona?"
     data_dir: Path = BACKEND_DIR / "data"
     frontend_dist: Path = BACKEND_DIR.parent / "frontend" / "dist" / "hoe-aona" / "browser"
     cors_origins: list[str] = ["http://localhost:4200"]

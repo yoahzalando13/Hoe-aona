@@ -11,7 +11,7 @@ CLAIM_LABELS = {
     "vrai": "Vrai",
     "plutot_vrai": "Plutôt vrai",
     "mitige": "Mitigé",
-    "non_verifiable": "Non vérifiable",
+    "non_verifiable": "Non Hoe-aona?ble",
     "plutot_faux": "Plutôt faux",
     "faux": "Faux",
 }
