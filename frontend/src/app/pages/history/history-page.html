@@ -1,19 +1,19 @@
 <section class="page history">
   <header class="h-title">
-    <h1 class="page-title">Historique</h1>
-    <a class="link-back" routerLink="/espace">Mon espace</a>
-    @if (!loading()) { <span class="muted">{{ total() }} analyse{{ total() > 1 ? 's' : '' }}</span> }
+    <h1 class="page-title">{{ 'Historique' | t }}</h1>
+    <a class="link-back" routerLink="/espace">{{ 'Mon espace' | t }}</a>
+    @if (!loading()) { <span class="muted">{{ total() | plural: '{n} analyse' : '{n} analyses' }}</span> }
   </header>
 
   <div class="search">
     <app-icon name="search" [size]="20" />
-    <label class="visually-hidden" for="q">Rechercher une analyse</label>
-    <input id="q" type="search" placeholder="Rechercher une analyse" autocomplete="off"
+    <label class="visually-hidden" for="q">{{ 'Rechercher une analyse' | t }}</label>
+    <input id="q" type="search" [placeholder]="'Rechercher une analyse' | t" autocomplete="off"
            [ngModel]="query()" (ngModelChange)="onQuery($event)">
   </div>
 
-  <div class="filters" role="group" aria-label="Filtrer par verdict">
-    <button type="button" class="f" [class.on]="!verdict()" (click)="setVerdict(null)">Toutes</button>
+  <div class="filters" role="group" [attr.aria-label]="'Filtrer par verdict' | t">
+    <button type="button" class="f" [class.on]="!verdict()" (click)="setVerdict(null)">{{ 'Toutes' | t }}</button>
     @for (v of verdicts; track v.key) {
       <button type="button" class="f" [class.on]="verdict() === v.key" (click)="setVerdict(v.key)"
               [attr.aria-pressed]="verdict() === v.key">
@@ -42,8 +42,8 @@
               </span>
               @if (confirmId() === item.id) {
                 <span class="confirm">
-                  <button type="button" class="btn btn-sm danger" (click)="confirmDelete($event, item.id)">Supprimer</button>
-                  <button type="button" class="btn btn-sm" (click)="cancelDelete($event)">Annuler</button>
+                  <button type="button" class="btn btn-sm danger" (click)="confirmDelete($event, item.id)">{{ 'Supprimer' | t }}</button>
+                  <button type="button" class="btn btn-sm" (click)="cancelDelete($event)">{{ 'Annuler' | t }}</button>
                 </span>
               } @else {
                 @if (statusLabel(item); as label) {
@@ -52,7 +52,7 @@
                   <app-score-ring [score]="item.global_score" [size]="44" [compact]="true" />
                 }
                 <button type="button" class="icon-btn del" (click)="askDelete($event, item.id)"
-                        [attr.aria-label]="'Supprimer ' + item.title">
+                        [attr.aria-label]="('Supprimer ' | t) + item.title">
                   <app-icon name="trash" [size]="18" />
                 </button>
               }
@@ -63,12 +63,12 @@
     } @empty {
       <div class="empty">
         @if (query() || verdict()) {
-          <h2>Aucun résultat</h2>
-          <p>Aucune analyse ne correspond à ces critères. Modifiez la recherche ou le filtre.</p>
+          <h2>{{ 'Aucun résultat' | t }}</h2>
+          <p>{{ 'Aucune analyse ne correspond à ces critères. Modifiez la recherche ou le filtre.' | t }}</p>
         } @else {
-          <h2>Aucune analyse pour l’instant</h2>
-          <p>Vos analyses apparaîtront ici, classées par date.</p>
-          <a class="btn btn-primary" routerLink="/analyser" style="margin-top:16px"><app-icon name="add" [size]="18" />Nouvelle analyse</a>
+          <h2>{{ 'Aucune analyse pour l’instant' | t }}</h2>
+          <p>{{ 'Vos analyses apparaîtront ici, classées par date.' | t }}</p>
+          <a class="btn btn-primary" routerLink="/analyser" style="margin-top:16px"><app-icon name="add" [size]="18" />{{ 'Nouvelle analyse' | t }}</a>
         }
       </div>
     }
@@ -76,7 +76,7 @@
     @if (hasMore()) {
       <div class="more">
         <button type="button" class="btn btn-outline" (click)="loadMore()" [disabled]="loadingMore()">
-          {{ loadingMore() ? 'Chargement…' : 'Afficher plus' }}
+          {{ loadingMore() ? ('Chargement…' | t) : ('Afficher plus' | t) }}
         </button>
       </div>
     }

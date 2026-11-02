@@ -98,10 +98,11 @@ _ANALYSIS_COLUMNS = {
     "notes": "TEXT NOT NULL DEFAULT ''",
     "tags": "TEXT NOT NULL DEFAULT '[]'",
     "workflow": "TEXT NOT NULL DEFAULT 'a_traiter'",
+    "events": "TEXT NOT NULL DEFAULT '[]'",
 }
 
 _UPDATABLE = {"status", "progress", "step", "title", "global_score", "verdict", "result", "error",
-              "notes", "tags", "workflow"}
+              "notes", "tags", "workflow", "events"}
 _USER_UPDATABLE = {"display_name", "organization", "bio", "role", "active", "password_hash"}
 _LIST_COLS = "id, created_at, updated_at, status, title, input_kind, global_score, verdict, notes, tags, workflow"
 
@@ -147,8 +148,9 @@ class Database:
             raise ValueError(f"Champs non modifiables : {unknown}")
         if "result" in fields and fields["result"] is not None and not isinstance(fields["result"], str):
             fields["result"] = json.dumps(fields["result"], ensure_ascii=False, default=str)
-        if "tags" in fields and not isinstance(fields["tags"], str):
-            fields["tags"] = json.dumps(fields["tags"], ensure_ascii=False)
+        for key in ("tags", "events"):
+            if key in fields and not isinstance(fields[key], str):
+                fields[key] = json.dumps(fields[key], ensure_ascii=False, default=str)
         fields["updated_at"] = _now()
         cols = ", ".join(f"{k} = ?" for k in fields)
         with self._lock:
@@ -560,6 +562,7 @@ class Database:
         d["inputs"] = json.loads(d["inputs"]) if d.get("inputs") else []
         d["result"] = json.loads(d["result"]) if d.get("result") else None
         d["tags"] = json.loads(d["tags"]) if d.get("tags") else []
+        d["events"] = json.loads(d["events"]) if d.get("events") else []
         return d
 
     @staticmethod

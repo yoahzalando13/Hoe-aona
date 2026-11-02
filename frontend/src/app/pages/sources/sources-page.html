@@ -1,21 +1,42 @@
 <section class="page page-wide sources">
-  <header class="s-head">
-    <div>
-      <h1 class="page-title">Sources officielles</h1>
-      <p class="muted">Institutions malgaches et internationales à joindre pour confirmer une information. Elles sont aussi
-        proposées automatiquement sous chaque affirmation analysée.</p>
+  <header class="hero">
+    <p class="hello">{{ 'Annuaire de vérification' | t }}</p>
+    <div class="hero-row">
+      <h1 class="page-title">{{ 'Sources officielles' | t }}</h1>
+      @if (auth.isAdmin()) {
+        <button type="button" class="btn btn-sm btn-primary" (click)="startNew()"><app-icon name="plus" [size]="16" />{{ 'Ajouter une source' | t }}</button>
+      }
     </div>
-    @if (auth.isAdmin()) {
-      <button type="button" class="btn btn-sm btn-primary" (click)="startNew()"><app-icon name="plus" [size]="16" />Ajouter une source</button>
+    <p class="sub">{{ 'Institutions malgaches et internationales à joindre pour confirmer une information. Elles sont aussi proposées automatiquement sous chaque affirmation analysée.' | t }}</p>
+    @if (!loading()) {
+    <div class="kpis">
+      <span><b>{{ counts().total }}</b> {{ 'institutions' | t }}</span>
+      <span><b>{{ counts().reachable }}</b> {{ 'joignables par téléphone ou e-mail' | t }}</span>
+      @if (counts().stale) { <span class="warn"><b>{{ counts().stale }}</b> {{ 'à revérifier' | t }}</span> }
+    </div>
     }
   </header>
 
   <div class="search">
     <app-icon name="search" [size]="20" />
-    <label class="visually-hidden" for="sq">Rechercher une institution</label>
-    <input id="sq" type="search" placeholder="Institution, sigle ou sujet (cyclone, inflation, élection…)" autocomplete="off"
+    <label class="visually-hidden" for="sq">{{ 'Rechercher une institution' | t }}</label>
+    <input id="sq" type="search" [placeholder]="'Institution, sigle ou sujet (cyclone, inflation, élection…)' | t" autocomplete="off"
            [ngModel]="query()" (ngModelChange)="onQuery($event)">
   </div>
+
+  @if (categories().length > 1) {
+  <div class="cats" role="group" [attr.aria-label]="'Catégories' | t">
+    <button type="button" class="chip" [class.on]="!category()" [attr.aria-pressed]="!category()" (click)="category.set(null)">
+      {{ 'Toutes' | t }} <small>{{ counts().total }}</small>
+    </button>
+    @for (c of categories(); track c.label) {
+      <button type="button" class="chip" [class.on]="category() === c.label" [attr.aria-pressed]="category() === c.label"
+              (click)="category.set(category() === c.label ? null : c.label)">
+        <app-icon [name]="icon(c.label)" [size]="14" />{{ c.label | t }} <small>{{ c.n }}</small>
+      </button>
+    }
+  </div>
+  }
 
   @if (error()) { <p class="error-box" role="alert">{{ error() }}</p> }
 
@@ -24,44 +45,70 @@
   }
 
   @if (loading()) {
-    <p class="muted">Chargement…</p>
+    <div class="grid" aria-busy="true">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) { <div class="card skel"></div> }
+    </div>
   } @else {
-    @for (g of groups(); track g.label) {
-      <h2 class="section-label">{{ g.label }}</h2>
-      <ul class="list">
+    @for (g of visibleGroups(); track g.label) {
+      <h2 class="section-label"><app-icon [name]="icon(g.label)" [size]="15" />{{ g.label | t }}</h2>
+      <ul class="grid">
         @for (s of g.items; track s.id) {
-          <li class="src" [class.off]="!s.active">
+          <li class="card src" [class.off]="!s.active" [class.editing]="editId() === s.id">
             @if (editId() === s.id) {
               <ng-container [ngTemplateOutlet]="editor" />
             } @else {
-              <div class="src-main">
+              <div class="src-top">
+                <span class="mono">{{ (s.acronym || s.name).slice(0, 3).toUpperCase() }}</span>
                 <div class="src-t">
-                  <strong>{{ s.acronym ? s.acronym + ' · ' : '' }}{{ s.name }}</strong>
-                  @if (!s.active) { <span class="badge neutral">Masquée</span> }
-                  @if (s.address) { <span class="muted">{{ s.address }}</span> }
+                  <strong>{{ s.acronym || s.name }}</strong>
+                  @if (s.acronym) { <span class="full">{{ s.name }}</span> }
                 </div>
-                <div class="links">
-                  @if (s.website) { <a [href]="s.website" target="_blank" rel="noopener"><app-icon name="globe" [size]="14" />{{ s.website.replace('https://', '').replace('http://', '') }}</a> }
-                  @for (t of tel(s.phone); track t.href) { <a [href]="t.href"><app-icon name="audio" [size]="14" />{{ t.label }}</a> }
-                  @if (s.email) { <a [href]="'mailto:' + s.email"><app-icon name="send" [size]="14" />{{ s.email }}</a> }
-                </div>
-                @if (s.topics.length) {
-                  <div class="topics">@for (t of s.topics.slice(0, 10); track t) { <span>{{ t }}</span> }</div>
+                @if (auth.isAdmin()) {
+                  <div class="acts">
+                    <button type="button" class="icon-btn" (click)="edit(s)" [attr.aria-label]="('Modifier ' | t) + s.name"><app-icon name="edit" [size]="17" /></button>
+                    <button type="button" class="icon-btn del" (click)="confirmId.set(s.id)" [attr.aria-label]="('Supprimer ' | t) + s.name"><app-icon name="trash" [size]="17" /></button>
+                  </div>
                 }
-                @if (s.notes) { <p class="notes">{{ s.notes }}</p> }
-                <span class="muted">{{ s.verified_at ? 'Coordonnées vérifiées le ' + (s.verified_at | date: 'd MMM y') : 'Coordonnées non vérifiées' }}</span>
               </div>
-              @if (auth.isAdmin()) {
-                <div class="acts">
-                  <button type="button" class="icon-btn" (click)="edit(s)" [attr.aria-label]="'Modifier ' + s.name"><app-icon name="edit" [size]="18" /></button>
-                  <button type="button" class="icon-btn del" (click)="confirmId.set(s.id)" [attr.aria-label]="'Supprimer ' + s.name"><app-icon name="trash" [size]="18" /></button>
+              @if (!s.active) { <span class="badge neutral">{{ 'Masquée' | t }}</span> }
+
+              <div class="quick">
+                @if (s.website) {
+                  <a class="q" [href]="s.website" target="_blank" rel="noopener" [attr.title]="host(s.website)"><app-icon name="external" [size]="15" />{{ 'Site' | t }}</a>
+                }
+                @for (p of tel(s.phone).slice(0, 1); track p.href) {
+                  <a class="q" [href]="p.href" [attr.title]="p.label"><app-icon name="audio" [size]="15" />{{ 'Appeler' | t }}</a>
+                }
+                @if (s.email) {
+                  <a class="q" [href]="'mailto:' + s.email" [attr.title]="s.email"><app-icon name="send" [size]="15" />{{ 'E-mail' | t }}</a>
+                }
+                <button type="button" class="q" (click)="copy(s)"><app-icon name="copy" [size]="15" />{{ 'Copier' | t }}</button>
+              </div>
+
+              <dl class="details">
+                @if (s.website) { <div><dt><app-icon name="globe" [size]="13" /></dt><dd><a [href]="s.website" target="_blank" rel="noopener">{{ host(s.website) }}</a></dd></div> }
+                @if (s.phone) { <div><dt><app-icon name="audio" [size]="13" /></dt><dd>@for (p of tel(s.phone); track p.href) { <a [href]="p.href">{{ p.label }}</a> }</dd></div> }
+                @if (s.email) { <div><dt><app-icon name="send" [size]="13" /></dt><dd><a [href]="'mailto:' + s.email">{{ s.email }}</a></dd></div> }
+                @if (s.address) { <div><dt><app-icon name="pin" [size]="13" /></dt><dd>{{ s.address }}</dd></div> }
+              </dl>
+
+              @if (s.topics.length) {
+                <div class="topics">
+                  @for (tp of s.topics.slice(0, 6); track tp) { <span>{{ tp }}</span> }
+                  @if (s.topics.length > 6) { <span class="more">+{{ s.topics.length - 6 }}</span> }
                 </div>
               }
+              @if (s.notes) { <p class="notes">{{ s.notes }}</p> }
+              <span class="fresh" [class.stale]="stale(s)">
+                <app-icon [name]="stale(s) ? 'alert' : 'check'" [size]="13" />
+                {{ s.verified_at ? ('Coordonnées vérifiées le ' | t) + (s.verified_at | date: 'd MMM y') : ('Coordonnées non vérifiées' | t) }}
+              </span>
+
               @if (confirmId() === s.id) {
                 <div class="confirm">
-                  <span>Supprimer {{ s.name }} de l’annuaire ?</span>
-                  <button type="button" class="btn btn-sm btn-danger" (click)="remove(s)">Supprimer</button>
-                  <button type="button" class="btn btn-sm" (click)="confirmId.set(null)">Annuler</button>
+                  <span>{{ 'Supprimer {nom} de l’annuaire ?' | t: { nom: s.name } }}</span>
+                  <button type="button" class="btn btn-sm btn-danger" (click)="remove(s)">{{ 'Supprimer' | t }}</button>
+                  <button type="button" class="btn btn-sm" (click)="confirmId.set(null)">{{ 'Annuler' | t }}</button>
                 </div>
               }
             }
@@ -69,27 +116,47 @@
         }
       </ul>
     } @empty {
-      <div class="empty"><p>Aucune source ne correspond à cette recherche.</p></div>
+      <div class="empty"><p>{{ 'Aucune source ne correspond à cette recherche.' | t }}</p></div>
     }
   }
 
+  <h2 class="section-label"><app-icon name="database" [size]="15" />{{ 'Portails de données ouvertes' | t }}</h2>
+  <ul class="portals">
+    @for (p of portals; track p.url) {
+      <li>
+        <a class="card portal" [href]="p.url" target="_blank" rel="noopener">
+          <span class="p-ic"><app-icon [name]="p.icon" [size]="18" /></span>
+          <span class="p-t"><strong>{{ p.name | t }}</strong><small>{{ p.desc | t }}</small></span>
+          <app-icon name="external" [size]="15" />
+        </a>
+      </li>
+    }
+    <li>
+      <a class="card portal internal" routerLink="/statistiques">
+        <span class="p-ic"><app-icon name="chart" [size]="18" /></span>
+        <span class="p-t"><strong>{{ 'Statistiques Hoe-aona?' | t }}</strong><small>{{ 'Chiffres clés et comparaisons, à jour' | t }}</small></span>
+        <app-icon name="chevron" [size]="15" />
+      </a>
+    </li>
+  </ul>
+
   <ng-template #editor>
     <form class="card editor" (ngSubmit)="save()" #sf="ngForm">
-      <label class="field wide"><span>Nom de l’institution</span><input class="input" name="name" [(ngModel)]="draft.name" required minlength="2"></label>
-      <label class="field"><span>Sigle</span><input class="input" name="acronym" [(ngModel)]="draft.acronym"></label>
-      <label class="field"><span>Catégorie</span><input class="input" name="category" [(ngModel)]="draft.category" placeholder="Ministère, Institution…"></label>
-      <label class="field"><span>Site web</span><input class="input" name="website" [(ngModel)]="draft.website" placeholder="https://"></label>
-      <label class="field"><span>E-mail</span><input class="input" name="email" [(ngModel)]="draft.email"></label>
-      <label class="field"><span>Téléphone (séparer par /)</span><input class="input" name="phone" [(ngModel)]="draft.phone" placeholder="+261 …"></label>
-      <label class="field"><span>Coordonnées vérifiées le</span><input class="input" type="date" name="verified" [(ngModel)]="draft.verified_at"></label>
-      <label class="field wide"><span>Adresse</span><input class="input" name="address" [(ngModel)]="draft.address"></label>
-      <label class="field wide"><span>Sujets couverts (séparés par des virgules) : servent à proposer la source sous les affirmations</span>
-        <input class="input" name="topics" [(ngModel)]="draft.topics" placeholder="santé, vaccin, épidémie"></label>
-      <label class="field wide"><span>Notes internes (porte-parole, horaires…)</span><textarea class="input" name="notes" [(ngModel)]="draft.notes" rows="2"></textarea></label>
-      <label class="check wide"><input type="checkbox" name="active" [(ngModel)]="draft.active"> Visible dans l’annuaire et proposée dans les analyses</label>
+      <label class="field wide"><span>{{ 'Nom de l’institution' | t }}</span><input class="input" name="name" [(ngModel)]="draft.name" required minlength="2"></label>
+      <label class="field"><span>{{ 'Sigle' | t }}</span><input class="input" name="acronym" [(ngModel)]="draft.acronym"></label>
+      <label class="field"><span>{{ 'Catégorie' | t }}</span><input class="input" name="category" [(ngModel)]="draft.category" [placeholder]="'Ministère, Institution…' | t"></label>
+      <label class="field"><span>{{ 'Site web' | t }}</span><input class="input" name="website" [(ngModel)]="draft.website" placeholder="https://"></label>
+      <label class="field"><span>{{ 'E-mail' | t }}</span><input class="input" name="email" [(ngModel)]="draft.email"></label>
+      <label class="field"><span>{{ 'Téléphone (séparer par /)' | t }}</span><input class="input" name="phone" [(ngModel)]="draft.phone" placeholder="+261 …"></label>
+      <label class="field"><span>{{ 'Coordonnées vérifiées le' | t }}</span><input class="input" type="date" name="verified" [(ngModel)]="draft.verified_at"></label>
+      <label class="field wide"><span>{{ 'Adresse' | t }}</span><input class="input" name="address" [(ngModel)]="draft.address"></label>
+      <label class="field wide"><span>{{ 'Sujets couverts (séparés par des virgules) : servent à proposer la source sous les affirmations' | t }}</span>
+        <input class="input" name="topics" [(ngModel)]="draft.topics" [placeholder]="'santé, vaccin, épidémie' | t"></label>
+      <label class="field wide"><span>{{ 'Notes internes (porte-parole, horaires…)' | t }}</span><textarea class="input" name="notes" [(ngModel)]="draft.notes" rows="2"></textarea></label>
+      <label class="check wide"><input type="checkbox" name="active" [(ngModel)]="draft.active"> {{ 'Visible dans l’annuaire et proposée dans les analyses' | t }}</label>
       <div class="row-end wide">
-        <button type="button" class="btn btn-sm" (click)="editId.set(null)">Annuler</button>
-        <button type="submit" class="btn btn-sm btn-primary" [disabled]="saving() || sf.invalid">{{ saving() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+        <button type="button" class="btn btn-sm" (click)="editId.set(null)">{{ 'Annuler' | t }}</button>
+        <button type="submit" class="btn btn-sm btn-primary" [disabled]="saving() || sf.invalid">{{ saving() ? ('Enregistrement…' | t) : ('Enregistrer' | t) }}</button>
       </div>
     </form>
   </ng-template>

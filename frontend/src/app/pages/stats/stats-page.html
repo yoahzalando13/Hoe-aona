@@ -1,0 +1,206 @@
+<section class="page page-wide stats">
+  <header class="hero">
+    <p class="hello">{{ 'Données officielles à jour' | t }}</p>
+    <h1 class="page-title">{{ 'Statistiques' | t }}</h1>
+    <p class="sub">
+      {{ 'Madagascar d’abord, comparaisons internationales ensuite. Valeurs officielles de la Banque mondiale, prolongées par les estimations récentes du FMI. Chaque chiffre est daté et sourcé.' | t }}
+    </p>
+  </header>
+
+  <!-- Madagascar en chiffres -->
+  <h2 class="section-label"><app-icon name="pin" [size]="15" /> {{ 'Madagascar en chiffres' | t }}</h2>
+  @if (dashError()) {
+    <p class="error-box" role="alert">{{ dashError() }}</p>
+  } @else if (!dashboard()) {
+    <div class="tiles" aria-busy="true">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) { <div class="tile skeleton-tile"></div> }
+    </div>
+  } @else {
+    <div class="tiles">
+      @for (d of dashboard(); track d.indicator_code) {
+      <button type="button" class="tile" [class.sel]="indicator() === d.indicator_code && country() === 'MDG'"
+              (click)="pick(d.indicator_code)" [disabled]="!d.ok">
+        <span class="t-label">{{ d.indicator_name || d.indicator_code }}</span>
+        @if (d.ok) {
+          <span class="t-value">{{ fmt(d.latest_value, d.unit) }} <small>{{ shortUnit(d.unit) }}</small></span>
+          <span class="t-meta">
+            <span [class.old]="age(d.latest_year) > 2">{{ d.latest_year }}</span>
+            @if (d.imf?.ok && d.imf!.latest_year! > d.latest_year!) {
+              · {{ 'FMI {annee} : {valeur}' | t: { annee: d.imf!.latest_year, valeur: fmt(d.imf!.latest_value, d.unit) } }}
+            }
+          </span>
+          @if (spark(d.series); as pts) {
+          <svg class="spark" viewBox="0 0 100 28" aria-hidden="true" preserveAspectRatio="none">
+            <polyline [attr.points]="pts" />
+          </svg>
+          }
+        } @else {
+          <span class="t-meta">{{ 'Donnée indisponible' | t }}</span>
+        }
+      </button>
+      }
+    </div>
+  }
+
+  <!-- Explorateur -->
+  <h2 class="section-label" id="explorer"><app-icon name="search" [size]="15" /> {{ 'Rechercher une statistique' | t }}</h2>
+  <div class="card explorer">
+    <div class="filters">
+      <div class="search">
+        <app-icon name="search" [size]="17" />
+        <label class="visually-hidden" for="q">{{ 'Rechercher un indicateur' | t }}</label>
+        <input id="q" type="search" [placeholder]="'Inflation, population, électricité…' | t" [ngModel]="query()" (ngModelChange)="query.set($event)">
+      </div>
+      <label class="visually-hidden" for="country">{{ 'Pays' | t }}</label>
+      <select id="country" class="input select" [ngModel]="country()" (ngModelChange)="country.set($event)">
+        @for (c of countries(); track c.code) { <option [value]="c.code">{{ c.name | t }}</option> }
+      </select>
+    </div>
+    <div class="tabs themes" role="tablist" [attr.aria-label]="'Thèmes' | t">
+      @for (t of ['Tous'].concat(catalog()?.themes ?? []); track t) {
+        <button type="button" role="tab" [class.on]="theme() === t" [attr.aria-selected]="theme() === t" (click)="theme.set(t)">{{ t | t }}</button>
+      }
+    </div>
+    <ul class="ind-list" role="listbox" [attr.aria-label]="'Indicateurs' | t">
+      @for (i of indicators(); track i.code) {
+      <li>
+        <button type="button" role="option" [class.on]="indicator() === i.code" [attr.aria-selected]="indicator() === i.code" (click)="indicator.set(i.code)">
+          <span>{{ i.label | t }}</span>
+          <small>{{ i.unit | t }}@if (i.imf) { {{ '· FMI' | t }} }</small>
+        </button>
+      </li>
+      } @empty {
+      <li class="muted none">{{ 'Aucun indicateur ne correspond.' | t }}</li>
+      }
+    </ul>
+  </div>
+
+  <!-- Série -->
+  <div class="card series">
+    <div class="series-head">
+      <div>
+        <h3>{{ current()?.label | t }} · {{ countryName() }}</h3>
+        <p class="muted">{{ current()?.unit | t }}</p>
+      </div>
+      @if (latest().official; as o) {
+      <div class="headline">
+        <strong>{{ fmt(o.value, current()?.unit) }}</strong>
+        <span class="muted" [class.old]="age(o.year) > 2">{{ 'en {annee} · Banque mondiale' | t: { annee: o.year } }}</span>
+        @if (latest().est; as e) {
+          <span class="est">{{ 'Estimation FMI {annee} :' | t: { annee: e.year } }} <b>{{ fmt(e.value, current()?.unit) }}</b></span>
+        }
+      </div>
+      }
+    </div>
+
+    @if (loadingSeries()) {
+      <div class="chart-skel" aria-busy="true" [attr.aria-label]="'Chargement de la série' | t"></div>
+    } @else if (seriesError()) {
+      <p class="error-box" role="alert">{{ seriesError() }}</p>
+    } @else if (pair() && !pair()!.worldbank.ok) {
+      <p class="empty muted">{{ pair()!.worldbank.error || ('Aucune donnée pour ce pays.' | t) }}</p>
+    } @else if (chart(); as c) {
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw solid"></i>{{ 'Valeur officielle' | t }}</span>
+        @if (c.estimate) { <span><i class="sw dashed"></i>{{ 'Estimation FMI' | t }}</span> }
+      </div>
+      <div class="chart-wrap">
+        <svg #svg class="chart" [attr.viewBox]="'0 0 ' + W + ' ' + H" role="img" tabindex="0"
+             [attr.aria-label]="current()?.label + ', ' + countryName() + ', ' + c.cp[0].year + ' à ' + c.cp[c.cp.length - 1].year + ('. Flèches gauche et droite pour parcourir.' | t)"
+             (pointermove)="onMove($event, svg)" (pointerleave)="hover.set(null)" (keydown)="onKey($event)" (blur)="hover.set(null)">
+          @for (t of c.yTicks; track t.v) {
+            <line class="grid" [attr.x1]="PAD.l" [attr.x2]="W - PAD.r" [attr.y1]="t.y" [attr.y2]="t.y" />
+            <text class="axis" [attr.x]="PAD.l - 8" [attr.y]="t.y + 4" text-anchor="end">{{ fmt(t.v, current()?.unit) }}</text>
+          }
+          @if (c.zeroY !== null) { <line class="zero" [attr.x1]="PAD.l" [attr.x2]="W - PAD.r" [attr.y1]="c.zeroY" [attr.y2]="c.zeroY" /> }
+          @for (t of c.xTicks; track t.year) {
+            <text class="axis" [attr.x]="t.x" [attr.y]="H - 8" text-anchor="middle">{{ t.year }}</text>
+          }
+          <path class="line" [attr.d]="c.official" />
+          @if (c.estimate) { <path class="line est" [attr.d]="c.estimate" /> }
+          @if (hover(); as h) {
+            <line class="cross" [attr.x1]="h.x" [attr.x2]="h.x" [attr.y1]="PAD.t" [attr.y2]="H - PAD.b" />
+            <circle class="dot" [class.est]="h.estimate" [attr.cx]="h.x" [attr.cy]="h.y" r="5" />
+          } @else {
+            <circle class="dot" [attr.cx]="c.cp[c.cp.length - 1].x" [attr.cy]="c.cp[c.cp.length - 1].y" r="4" [class.est]="c.cp[c.cp.length - 1].estimate" />
+          }
+        </svg>
+        @if (hover(); as h) {
+        <div class="tip" [style.left.%]="tipLeft(h)" role="status">
+          <b>{{ h.year }}</b>
+          <span>{{ fmt(h.value, current()?.unit) }} {{ shortUnit(current()?.unit) }}</span>
+          <small>{{ h.estimate ? ('Estimation FMI' | t) : ('Banque mondiale' | t) }}</small>
+        </div>
+        }
+      </div>
+      <div class="series-actions">
+        <button type="button" class="btn btn-sm btn-primary" (click)="cite()"><app-icon name="copy" [size]="15" />{{ 'Copier le chiffre et sa source' | t }}</button>
+        <button type="button" class="btn btn-sm" (click)="showTable.set(!showTable())" [attr.aria-expanded]="showTable()">
+          <app-icon name="layers" [size]="15" />{{ showTable() ? ('Masquer le tableau' | t) : ('Voir le tableau' | t) }}
+        </button>
+        @if (pair()!.worldbank.source_url) {
+          <a class="btn btn-sm" [href]="pair()!.worldbank.source_url" target="_blank" rel="noopener"><app-icon name="external" [size]="15" />{{ 'Banque mondiale' | t }}</a>
+        }
+        @if (pair()!.imf?.ok) {
+          <a class="btn btn-sm" [href]="pair()!.imf!.source_url" target="_blank" rel="noopener"><app-icon name="external" [size]="15" />{{ 'FMI' | t }}</a>
+        }
+      </div>
+      @if (showTable()) {
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th scope="col">{{ 'Année' | t }}</th><th scope="col">{{ 'Valeur' | t }}</th><th scope="col">{{ 'Source' | t }}</th></tr></thead>
+          <tbody>
+            @for (p of points().slice().reverse(); track p.year + p.source) {
+            <tr><td>{{ p.year }}</td><td>{{ fmt(p.value, current()?.unit) }}</td><td>{{ p.estimate ? ('FMI (estimation)' | t) : p.source }}</td></tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      }
+      @if (pair()!.worldbank.last_updated) {
+        <p class="muted foot">{{ 'Base Banque mondiale mise à jour le {date}.' | t: { date: pair()!.worldbank.last_updated } }}
+          @if (latest().official && age(latest().official!.year) > 2) { {{ 'La dernière valeur officielle date de plus de deux ans : vérifiez auprès de l’INSTAT.' | t }} }
+        </p>
+      }
+    } @else if (pair()) {
+      <p class="empty muted">{{ 'Pas assez de valeurs pour tracer une évolution.' | t }}</p>
+    }
+  </div>
+
+  <!-- Comparaison -->
+  <h2 class="section-label"><app-icon name="globe" [size]="15" /> {{ 'Comparaison internationale' | t }}</h2>
+  <div class="card compare">
+    <p class="muted">{{ 'Dernière valeur disponible de « {indicateur} ». Choisissez jusqu’à 10 pays ou régions.' | t: { indicateur: current()?.label } }}</p>
+    <div class="chips" role="group" [attr.aria-label]="'Pays comparés' | t">
+      @for (c of countries(); track c.code) {
+        <button type="button" class="chip" [class.on]="compareWith().includes(c.code)" [attr.aria-pressed]="compareWith().includes(c.code)" (click)="toggleCompare(c.code)">{{ c.name | t }}</button>
+      }
+    </div>
+    @if (loadingCompare()) {
+      <div class="chart-skel short" aria-busy="true"></div>
+    } @else if (bars().items.length) {
+      <ul class="bars" [class.neg]="bars().hasNeg">
+        @for (b of bars().items; track b.country_code) {
+        <li [class.mg]="b.country_code === 'MDG'" (pointerenter)="hoverBar.set(b.country_code)" (pointerleave)="hoverBar.set(null)">
+          <span class="b-name">{{ b.country }}</span>
+          <span class="b-track">
+            <i [class.neg]="b.neg" [style.width.%]="b.pct"></i>
+          </span>
+          <span class="b-val">{{ fmt(b.latest_value, b.unit) }} <small [class.old]="age(b.latest_year) > 2">{{ b.latest_year }}</small></span>
+        </li>
+        }
+      </ul>
+      @if (bars().missing.length) {
+        <p class="muted foot">{{ 'Sans donnée : {liste}.' | t: { liste: bars().missing } }}</p>
+      }
+    } @else {
+      <p class="empty muted">{{ 'Sélectionnez au moins un pays.' | t }}</p>
+    }
+  </div>
+
+  <p class="muted outro">
+    {{ 'Pour un chiffre plus récent ou plus fin (région, district), contactez l’' | t }}<a routerLink="/sources-officielles">{{ 'INSTAT et les autres sources officielles' | t }}</a>.
+  </p>
+
+  @if (notice()) { <div class="toast" role="status">{{ notice() }}</div> }
+</section>

@@ -1,18 +1,18 @@
 <section class="page settings">
-  <header class="appbar"><h1 class="page-title">Paramètres</h1></header>
+  <header class="appbar"><h1 class="page-title">{{ 'Paramètres' | t }}</h1></header>
 
   @if (auth.user(); as me) {
-    <h2 class="section-label">Compte</h2>
-    <div class="list">
+    <h2 class="section-label">{{ 'Compte' | t }}</h2>
+    <div class="list account-list">
       <a class="opt account" [routerLink]="['/profil', me.id]">
         <span class="ico tone-blue"><app-icon name="user" [size]="18" /></span>
-        <span class="lb">{{ me.display_name }}<small>{{ me.email }} · {{ me.role === 'admin' ? 'Administrateur' : 'Personnel média' }}</small></span>
+        <span class="lb">{{ me.display_name }}<small>{{ me.email }} · {{ me.role === 'admin' ? ('Administrateur' | t) : ('Personnel média' | t) }}</small></span>
         <app-icon name="chevron" [size]="18" />
       </a>
       <div class="opt">
         <span class="ico tone-grey"><app-icon name="logout" [size]="18" /></span>
-        <span class="lb">Session<small>Vos préférences ci-dessous ne s’appliquent qu’à votre compte</small></span>
-        <button type="button" class="btn btn-sm btn-outline" (click)="auth.logout()">Se déconnecter</button>
+        <span class="lb">{{ 'Session' | t }}<small>{{ 'Vos préférences ci-dessous ne s’appliquent qu’à votre compte' | t }}</small></span>
+        <button type="button" class="btn btn-sm btn-outline" (click)="auth.logout()">{{ 'Se déconnecter' | t }}</button>
       </div>
     </div>
   }
@@ -24,7 +24,28 @@
   } @else {
   @if (prefs(); as p) {
 
-    <h2 class="section-label">Poids des critères dans le score global</h2>
+    <h2 class="section-label">{{ 'Langue' | t }}</h2>
+    <div class="list">
+      <div class="opt">
+        <span class="ico tone-orange"><app-icon name="globe" [size]="18" /></span>
+        <label class="lb" for="ui-lang">{{ 'Langue de l’interface' | t }}<small>{{ 'Enregistrée dans votre compte et appliquée sur tous vos appareils' | t }}</small></label>
+        <select id="ui-lang" class="select" [ngModel]="p.ui_language ?? currentLang" (ngModelChange)="setUiLanguage($event)">
+          @for (l of langs; track l.code) { <option [value]="l.code" [attr.lang]="l.code">{{ l.label }}</option> }
+        </select>
+      </div>
+      <div class="opt">
+        <span class="ico tone-purple"><app-icon name="document" [size]="18" /></span>
+        <label class="lb" for="lang">{{ 'Langue du rapport et de l’article' | t }}<small>{{ 'Résumé, conclusions, tests de raisonnement et article rédigés par l’IA' | t }}</small></label>
+        <select id="lang" class="select" [ngModel]="p.report_language" (ngModelChange)="update('report_language', $event)">
+          @for (l of langs; track l.code) { <option [value]="l.code" [attr.lang]="l.code">{{ l.label }}</option> }
+        </select>
+      </div>
+      @if (langPending()) {
+        <div class="opt foot"><span class="muted">{{ 'La page se rechargera dans la nouvelle langue après l’enregistrement.' | t }}</span></div>
+      }
+    </div>
+
+    <h2 class="section-label">{{ 'Poids des critères dans le score global' | t }}</h2>
     <div class="list">
       @for (w of weights; track w.key) {
         <div class="opt slider-opt">
@@ -36,70 +57,60 @@
         </div>
       }
       <div class="opt foot">
-        <span class="muted">Les poids sont ramenés à 100 % automatiquement.</span>
-        <button type="button" class="link-btn" (click)="resetWeights()">Rétablir 40 / 40 / 20</button>
+        <span class="muted">{{ 'Les poids sont ramenés à 100 % automatiquement.' | t }}</span>
+        <button type="button" class="link-btn" (click)="resetWeights()">{{ 'Rétablir 40 / 40 / 20' | t }}</button>
       </div>
     </div>
 
-    <h2 class="section-label">Analyse</h2>
+    <h2 class="section-label">{{ 'Analyse' | t }}</h2>
     <div class="list">
       <div class="opt">
         <span class="ico tone-purple"><app-icon name="robot" [size]="18" /></span>
-        <label class="lb" for="deep">Détection IA approfondie<small>Envoie les images à Sightengine en plus des signatures locales</small></label>
+        <label class="lb" for="deep">{{ 'Détection IA approfondie' | t }}<small>{{ 'Envoie les images à Sightengine en plus des signatures locales' | t }}</small></label>
         <input id="deep" type="checkbox" class="toggle" role="switch" [ngModel]="p.deep_ai_detection"
                (ngModelChange)="update('deep_ai_detection', $event)">
       </div>
       <div class="opt slider-opt">
         <span class="ico tone-red"><app-icon name="alert" [size]="18" /></span>
-        <label class="lb" for="ai-th">Exclure une source si probabilité IA ≥<small>Au-delà, la page est retirée du calcul et listée à part</small></label>
+        <label class="lb" for="ai-th">{{ 'Exclure une source si probabilité IA ≥' | t }}<small>{{ 'Au-delà, la page est retirée du calcul et listée à part' | t }}</small></label>
         <span class="vl strong">{{ (p.ai_exclusion_threshold * 100).toFixed(0) }} %</span>
         <input id="ai-th" type="range" min="0.5" max="0.95" step="0.05" [ngModel]="p.ai_exclusion_threshold"
                (ngModelChange)="update('ai_exclusion_threshold', +$event)">
       </div>
       <div class="opt slider-opt">
         <span class="ico tone-blue"><app-icon name="shield" [size]="18" /></span>
-        <label class="lb" for="min-rel">Fiabilité minimale d’une preuve<small>Les sources moins fiables sont exclues du calcul</small></label>
+        <label class="lb" for="min-rel">{{ 'Fiabilité minimale d’une preuve' | t }}<small>{{ 'Les sources moins fiables sont exclues du calcul' | t }}</small></label>
         <span class="vl strong">{{ (p.min_source_reliability * 100).toFixed(0) }} %</span>
         <input id="min-rel" type="range" min="0" max="0.8" step="0.05" [ngModel]="p.min_source_reliability"
                (ngModelChange)="update('min_source_reliability', +$event)">
       </div>
       <div class="opt">
         <span class="ico tone-green"><app-icon name="chart" [size]="18" /></span>
-        <label class="lb" for="country">Pays par défaut des statistiques<small>Utilisé quand le contenu ne précise pas de pays</small></label>
+        <label class="lb" for="country">{{ 'Pays par défaut des statistiques' | t }}<small>{{ 'Utilisé quand le contenu ne précise pas de pays' | t }}</small></label>
         <select id="country" class="select" [ngModel]="p.default_country" (ngModelChange)="update('default_country', $event)">
           @for (c of countries; track c.code) { <option [value]="c.code">{{ c.name }}</option> }
         </select>
       </div>
-      <div class="opt">
-        <span class="ico tone-orange"><app-icon name="globe" [size]="18" /></span>
-        <label class="lb" for="lang">Langue du rapport et de l’article</label>
-        <select id="lang" class="select" [ngModel]="p.report_language" (ngModelChange)="update('report_language', $event)">
-          <option value="fr">Français</option>
-          <option value="mg">Malagasy</option>
-          <option value="en">English</option>
-        </select>
-      </div>
     </div>
 
-    <h2 class="section-label">Données</h2>
+    <h2 class="section-label">{{ 'Données' | t }}</h2>
     <div class="list">
       <div class="opt">
         <span class="ico tone-grey"><app-icon name="history" [size]="18" /></span>
-        <label class="lb" for="ret">Conserver l’historique<small>Les analyses et fichiers plus anciens sont supprimés au redémarrage du serveur</small></label>
+        <label class="lb" for="ret">{{ 'Conserver l’historique' | t }}<small>{{ 'Les analyses et fichiers plus anciens sont supprimés au redémarrage du serveur' | t }}</small></label>
         <select id="ret" class="select" [ngModel]="p.history_retention_days" (ngModelChange)="update('history_retention_days', +$event)">
-          <option [ngValue]="7">7 jours</option>
-          <option [ngValue]="30">30 jours</option>
-          <option [ngValue]="90">90 jours</option>
-          <option [ngValue]="365">1 an</option>
+          <option [ngValue]="7">{{ '7 jours' | t }}</option>
+          <option [ngValue]="30">{{ '30 jours' | t }}</option>
+          <option [ngValue]="90">{{ '90 jours' | t }}</option>
+          <option [ngValue]="365">{{ '1 an' | t }}</option>
         </select>
       </div>
     </div>
 
     @if (health(); as h) {
-      <h2 class="section-label">Services connectés</h2>
+      <h2 class="section-label">{{ 'Services connectés' | t }}</h2>
       @if (!hasLlm()) {
-        <p class="warn">Aucun LLM configuré : les affirmations sont repérées par heuristique et l’article suit un modèle fixe.
-          Ajoutez une clé Gemini ou Groq gratuite dans <code>backend/.env</code>.</p>
+        <p class="warn">{{ 'Aucun LLM configuré : les affirmations sont repérées par heuristique et l’article suit un modèle fixe. Ajoutez une clé Gemini ou Groq gratuite dans' | t }} <code>{{ 'backend/.env' | t }}</code>.</p>
       }
       <div class="list">
         @for (s of h.providers; track s.key) {
@@ -107,28 +118,28 @@
             <span class="ico" [class]="s.configured ? 'tone-green' : 'tone-grey'">
               <app-icon [name]="s.configured ? 'check' : 'link'" [size]="18" />
             </span>
-            <span class="lb">{{ s.label }}<small>{{ s.role }}</small></span>
+            <span class="lb">{{ s.label | t }}<small>{{ s.role | t }}</small></span>
             @if (s.configured) {
-              <span class="badge good">{{ s.requires_key ? 'Actif' : 'Sans clé' }}</span>
+              <span class="badge good">{{ s.requires_key ? ('Actif' | t) : ('Sans clé' | t) }}</span>
             } @else if (s.signup_url) {
-              <a class="badge neutral" [href]="s.signup_url" target="_blank" rel="noopener">Obtenir une clé</a>
+              <a class="badge neutral" [href]="s.signup_url" target="_blank" rel="noopener">{{ 'Obtenir une clé' | t }}</a>
             }
           </div>
         }
       </div>
       <p class="muted mcp">
-        Mode {{ h.mcp_mode === 'mcp' ? 'MCP' : 'direct' }} : {{ h.mcp_tools.length }} outils disponibles.
+        {{ 'Mode {mode} : {n} outils disponibles.' | t: { mode: h.mcp_mode === 'mcp' ? 'MCP' : ('direct' | t), n: h.mcp_tools.length } }}
         @for (e of h.mcp_errors; track $index) { <br><span class="err">{{ e }}</span> }
       </p>
       @if (missingKeys()) {
-        <p class="muted">Les clés se renseignent côté serveur uniquement (fichier <code>backend/.env</code>), jamais dans le navigateur.</p>
+        <p class="muted">{{ 'Les clés se renseignent côté serveur uniquement (fichier' | t }} <code>{{ 'backend/.env' | t }}</code>{{ '), jamais dans le navigateur.' | t }}</p>
       }
     }
 
     <div class="actions" [class.show]="dirty()">
-      <button type="button" class="btn" (click)="cancel()" [disabled]="saving()">Annuler</button>
+      <button type="button" class="btn" (click)="cancel()" [disabled]="saving()">{{ 'Annuler' | t }}</button>
       <button type="button" class="btn btn-primary" (click)="save()" [disabled]="saving() || !dirty()">
-        {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+        {{ saving() ? ('Enregistrement…' | t) : ('Enregistrer' | t) }}
       </button>
     </div>
   }

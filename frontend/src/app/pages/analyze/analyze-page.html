@@ -1,16 +1,16 @@
 <section class="page analyze" (dragover)="onDragOver($event)" (dragleave)="dragging.set(false)" (drop)="onDrop($event)"
          [class.dragging]="dragging()">
   <header class="hero">
-    <p class="hello">Vérifier une information</p>
-    <h1 class="title">Insérer les données à analyser</h1>
-    <p class="sub">Ajoutez une image, un document, un texte ou un audio. Nous évaluons la source, la véracité et la part d’IA, preuves à l’appui.</p>
+    <p class="hello">{{ 'Vérifier une information' | t }}</p>
+    <h1 class="title">{{ 'Insérer les données à analyser' | t }}</h1>
+    <p class="sub">{{ 'Ajoutez une image, un document, un texte ou un audio. Nous évaluons la source, la véracité et la part d’IA, preuves à l’appui.' | t }}</p>
   </header>
 
   <input #picker type="file" multiple class="visually-hidden" [accept]="pickerAccept()" (change)="onPicked($event)"
          tabindex="-1" aria-hidden="true">
 
   @if (count()) {
-    <h2 class="section-label">Ajoutés ({{ count() }})</h2>
+    <h2 class="section-label">{{ 'Ajoutés ({n})' | t: { n: count() } }}</h2>
     <ul class="attachments">
       @for (a of attachments(); track a.id) {
         <li class="file">
@@ -20,7 +20,7 @@
             <span class="thumb menu-icon"><app-icon [name]="kindIcon(a.kind).icon" [size]="18" /></span>
           }
           <span class="meta"><span class="n">{{ a.file.name }}</span><span class="s">{{ fileSize(a.file.size) }}</span></span>
-          <button type="button" class="icon-btn x" (click)="removeAttachment(a)" [attr.aria-label]="'Retirer ' + a.file.name">
+          <button type="button" class="icon-btn x" (click)="removeAttachment(a)" [attr.aria-label]="('Retirer ' | t) + a.file.name">
             <app-icon name="close" [size]="16" />
           </button>
         </li>
@@ -32,13 +32,13 @@
 
   <div class="spacer"></div>
   <div class="composer" [class.busy]="submitting()">
-    <label class="visually-hidden" for="text">Texte à vérifier</label>
-    <textarea #textarea id="text" rows="3" placeholder="Collez un texte à vérifier…"
+    <label class="visually-hidden" for="text">{{ 'Texte à vérifier' | t }}</label>
+    <textarea #textarea id="text" rows="3" [placeholder]="'Collez un texte à vérifier…' | t"
               [ngModel]="text()" (ngModelChange)="text.set($event)" (keydown)="onKeydown($event)" maxlength="50000"></textarea>
     <div class="row">
       <div class="left">
         <div class="insert">
-          <button type="button" class="round" (click)="menuOpen.set(!menuOpen())" aria-label="Insérer un fichier"
+          <button type="button" class="round" (click)="menuOpen.set(!menuOpen())" [attr.aria-label]="'Insérer un fichier' | t"
                   aria-haspopup="menu" [attr.aria-expanded]="menuOpen()">
             <app-icon [name]="menuOpen() ? 'close' : 'plus'" />
           </button>
@@ -48,37 +48,37 @@
               <li role="none">
                 <button type="button" role="menuitem" (click)="pick('image')">
                   <span class="menu-icon"><app-icon name="image" [size]="18" /></span>
-                  <span><strong>Image</strong><small>JPG, PNG, capture</small></span>
+                  <span><strong>{{ 'Image' | t }}</strong><small>{{ 'JPG, PNG, capture' | t }}</small></span>
                 </button>
               </li>
               <li role="none">
                 <button type="button" role="menuitem" (click)="pick('document')">
                   <span class="menu-icon"><app-icon name="document" [size]="18" /></span>
-                  <span><strong>Document</strong><small>PDF, DOCX, TXT</small></span>
+                  <span><strong>{{ 'Document' | t }}</strong><small>{{ 'PDF, DOCX, TXT' | t }}</small></span>
                 </button>
               </li>
               <li role="none">
                 <button type="button" role="menuitem" (click)="pick('audio')">
                   <span class="menu-icon"><app-icon name="audio" [size]="18" /></span>
-                  <span><strong>Audio</strong><small>Importer un fichier</small></span>
+                  <span><strong>{{ 'Audio' | t }}</strong><small>{{ 'Importer un fichier' | t }}</small></span>
                 </button>
               </li>
             </ul>
           }
         </div>
-        <span class="mode"><app-icon name="shield" [size]="16" />Analyse complète</span>
+        <span class="mode"><app-icon name="shield" [size]="16" />{{ 'Analyse complète' | t }}</span>
       </div>
       <div class="right">
         @if (recording()) { <span class="rec" aria-live="polite">● {{ formatSeconds(recordSeconds()) }}</span> }
         <button type="button" class="icon-btn mic" [class.on]="recording()" (click)="toggleRecording()"
-                [attr.aria-label]="recording() ? 'Arrêter l’enregistrement' : 'Enregistrer un audio'">
+                [attr.aria-label]="recording() ? ('Arrêter l’enregistrement' | t) : ('Enregistrer un audio' | t)">
           <app-icon [name]="recording() ? 'stop' : 'mic'" />
         </button>
-        <button type="button" class="send" (click)="submit()" [disabled]="!canSubmit()" aria-label="Lancer l’analyse">
+        <button type="button" class="send" (click)="submit()" [disabled]="!canSubmit()" [attr.aria-label]="'Lancer l’analyse' | t">
           @if (submitting()) { <span class="spinner" aria-hidden="true"></span> } @else { <app-icon name="send" /> }
         </button>
       </div>
     </div>
   </div>
-  <p class="hint muted">Ctrl + Entrée pour lancer l’analyse. Les fichiers sont conservés selon la durée réglée dans les paramètres.</p>
+  <p class="hint muted">{{ 'Ctrl + Entrée pour lancer l’analyse. Les fichiers sont conservés selon la durée réglée dans les paramètres.' | t }}</p>
 </section>

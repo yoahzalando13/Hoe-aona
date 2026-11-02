@@ -8,10 +8,11 @@ import { avatarTone, initials } from '../../core/format';
 import { Post, PublicUser } from '../../core/models';
 import { Icon } from '../../shared/icon';
 import { PostCard } from '../../shared/post-card';
+import { PluralPipe, TPipe, t } from '../../core/i18n';
 
 @Component({
   selector: 'app-profile-page',
-  imports: [DatePipe, FormsModule, RouterLink, Icon, PostCard],
+  imports: [DatePipe, FormsModule, RouterLink, Icon, PostCard, TPipe, PluralPipe],
   templateUrl: './profile-page.html',
   styleUrl: './profile-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -77,7 +78,7 @@ export class ProfilePage {
         this.profile.update((p) => (p ? { ...p, display_name: u.display_name, organization: u.organization, bio: u.bio } : p));
         this.saving.set(false);
         this.editing.set(false);
-        this.flash('Profil mis à jour');
+        this.flash(t('Profil mis à jour'));
       },
       error: (err) => { this.formError.set(errorMessage(err)); this.saving.set(false); },
     });
@@ -90,7 +91,7 @@ export class ProfilePage {
       next: () => {
         this.pwd = { current: '', next: '' };
         this.pwdBusy.set(false);
-        this.flash('Mot de passe modifié. Vos autres sessions ont été fermées.');
+        this.flash(t('Mot de passe modifié. Vos autres sessions ont été fermées.'));
       },
       error: (err) => { this.pwdError.set(errorMessage(err)); this.pwdBusy.set(false); },
     });

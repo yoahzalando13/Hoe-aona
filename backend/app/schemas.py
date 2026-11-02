@@ -22,6 +22,7 @@ class Preferences(BaseModel):
     min_source_reliability: float = Field(0.35, ge=0.0, le=0.9)
     default_country: str = "MDG"
     report_language: Literal["fr", "en", "mg"] = "fr"
+    ui_language: Literal["fr", "en", "mg"] | None = None  # langue de l'interface du compte
     history_retention_days: int = Field(90, ge=1, le=3650)
 
     @field_validator("default_country")
@@ -184,9 +185,12 @@ class Article(BaseModel):
     lead: str
     body_markdown: str
     tags: list[str] = []
+    key_points: list[str] = []  # « L'essentiel » : 3 à 4 phrases courtes
+    social_post: str = ""  # suggestion de publication courte pour le fil média
     sources: list[ArticleSource] = []
     generated_by: Literal["llm", "modele"] = "modele"
     generated_at: datetime
+    edited: bool = False  # relu et modifié par le journaliste
 
 
 class AnalysisResult(BaseModel):
@@ -209,6 +213,31 @@ Workflow = Literal["a_traiter", "en_revue", "valide", "publie", "archive"]
 Role = Literal["media", "admin"]
 
 
+class ArticleEdit(BaseModel):
+    """Modifications du journaliste sur l'article suggéré."""
+    title: str = Field(..., min_length=1, max_length=200)
+    lead: str = Field("", max_length=800)
+    body_markdown: str = Field(..., min_length=1, max_length=20000)
+    key_points: list[str] = Field([], max_length=6)
+    social_post: str = Field("", max_length=2000)
+
+
+class ArticlePublish(BaseModel):
+    """Publication directe sur le fil : article complet ou publication courte, texte éventuellement retouché."""
+    format: Literal["article", "court"] = "article"
+    body: str | None = Field(None, max_length=20000)
+
+
+class AgentEvent(BaseModel):
+    """Étape du journal d'analyse : quel agent travaille, sur quoi, avec quel résultat."""
+    at: float  # secondes écoulées depuis le début de l'analyse
+    agent: str  # lecteur, detecteur, extracteur, chercheur, evaluateur, calculateur, redacteur
+    message: str
+    status: Literal["running", "done", "error", "info"] = "info"
+    detail: str = ""
+    tool: str = ""
+
+
 class AnalysisOut(BaseModel):
     id: str
     created_at: datetime
@@ -225,6 +254,7 @@ class AnalysisOut(BaseModel):
     notes: str = ""
     tags: list[str] = []
     workflow: Workflow = "a_traiter"
+    events: list[AgentEvent] = []
     owner_id: str | None = None
     owner_name: str | None = None
     editable: bool = False
@@ -407,7 +437,7 @@ class PostPage(BaseModel):
 
 
 class PostUpdate(BaseModel):
-    body: str = Field(..., min_length=1, max_length=5000)
+    body: str = Field(..., min_length=1, max_length=20000)
 
 
 class CommentIn(BaseModel):

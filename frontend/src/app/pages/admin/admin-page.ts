@@ -8,12 +8,13 @@ import { GLOBAL_VERDICTS, WORKFLOWS, avatarTone, formatScore, initials, toneColo
 import { AdminUser, AnalysisStats, PlatformStats, Post, Role } from '../../core/models';
 import { Icon } from '../../shared/icon';
 import { PostCard } from '../../shared/post-card';
+import { PluralPipe, TPipe } from '../../core/i18n';
 
 type Tab = 'overview' | 'users' | 'posts';
 
 @Component({
   selector: 'app-admin-page',
-  imports: [DatePipe, FormsModule, RouterLink, Icon, PostCard],
+  imports: [DatePipe, FormsModule, RouterLink, Icon, PostCard, TPipe, PluralPipe],
   templateUrl: './admin-page.html',
   styleUrl: './admin-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

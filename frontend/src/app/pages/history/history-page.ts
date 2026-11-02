@@ -6,16 +6,17 @@ import { GLOBAL_VERDICTS, dayGroup, kindIcon, toneColor } from '../../core/forma
 import { AnalysisListItem, GlobalVerdict } from '../../core/models';
 import { Icon } from '../../shared/icon';
 import { ScoreRing } from '../../shared/score-ring';
+import { LOCALE, PluralPipe, TPipe, t } from '../../core/i18n';
 
 const PAGE_SIZE = 20;
-const STATUS_LABEL: Record<string, string> = { pending: 'En attente', running: 'En cours', error: 'Échec' };
+const STATUS_LABEL: Record<string, string> = { pending: t('En attente'), running: t('En cours'), error: t('Échec') };
 const KIND_LABEL: Record<string, string> = {
-  text: 'Texte', image: 'Image', document: 'Document', audio: 'Audio', url: 'Lien', mixte: 'Plusieurs données',
+  text: t('Texte'), image: t('Image'), document: t('Document'), audio: t('Audio'), url: t('Lien'), mixte: t('Plusieurs données'),
 };
 
 @Component({
   selector: 'app-history-page',
-  imports: [FormsModule, RouterLink, Icon, ScoreRing],
+  imports: [FormsModule, RouterLink, Icon, ScoreRing, TPipe, PluralPipe],
   templateUrl: './history-page.html',
   styleUrl: './history-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -134,8 +135,8 @@ export class HistoryPage {
   }
 
   protected subtitle(item: AnalysisListItem): string {
-    const kind = KIND_LABEL[item.input_kind] ?? 'Analyse';
-    const time = new Date(item.created_at).toLocaleString('fr-FR', {
+    const kind = KIND_LABEL[item.input_kind] ?? t('Analyse');
+    const time = new Date(item.created_at).toLocaleString(LOCALE, {
       weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
     });
     return `${kind}, ${time}`;

@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse
 from .config import get_settings
 from .db import get_db
 from .mcp.gateway import get_gateway
-from .routers import admin, analyses, auth as auth_router, settings as settings_router, social, sources, system
+from .routers import admin, analyses, auth as auth_router, settings as settings_router, social, sources, stats, system
 from .services.pipeline import load_preferences
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -45,6 +45,7 @@ app.include_router(analyses.router)
 app.include_router(social.router)
 app.include_router(admin.router)
 app.include_router(sources.router)
+app.include_router(stats.router)
 app.include_router(settings_router.router)
 app.include_router(system.router)
 

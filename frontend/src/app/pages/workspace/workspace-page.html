@@ -1,26 +1,26 @@
 <section class="page page-wide workspace">
   <header class="w-head">
     <div>
-      <h1 class="page-title">Mon espace</h1>
-      <p class="muted">Votre base d’informations traitées : suivi éditorial, notes, étiquettes et publication.</p>
+      <h1 class="page-title">{{ 'Mon espace' | t }}</h1>
+      <p class="muted">{{ 'Votre base d’informations traitées : suivi éditorial, notes, étiquettes et publication.' | t }}</p>
     </div>
     <div class="head-actions">
-      <a class="btn btn-sm btn-outline" routerLink="/sources"><app-icon name="users" [size]="16" />Sources officielles</a>
-      <a class="btn btn-sm btn-outline" [href]="exportUrl" download><app-icon name="download" [size]="16" />Exporter (CSV)</a>
-      <a class="btn btn-sm btn-primary" routerLink="/analyser"><app-icon name="add" [size]="16" />Nouvelle analyse</a>
+      <a class="btn btn-sm btn-outline" routerLink="/sources-officielles"><app-icon name="users" [size]="16" />{{ 'Sources officielles' | t }}</a>
+      <a class="btn btn-sm btn-outline" [href]="exportUrl" download><app-icon name="download" [size]="16" />{{ 'Exporter (CSV)' | t }}</a>
+      <a class="btn btn-sm btn-primary" routerLink="/analyser"><app-icon name="add" [size]="16" />{{ 'Nouvelle analyse' | t }}</a>
     </div>
   </header>
 
   @if (stats(); as s) {
     <div class="stat-grid">
-      <div class="stat"><b>{{ s.total }}</b><span>analyses enregistrées</span></div>
-      <div class="stat"><b>{{ formatScore(s.average_score) }}</b><span>score moyen /10</span></div>
-      <div class="stat"><b>{{ count('en_revue') + count('a_traiter') }}</b><span>en attente de traitement</span></div>
-      <div class="stat"><b>{{ count('publie') }}</b><span>publiées sur le fil</span></div>
+      <div class="stat"><b>{{ s.total }}</b><span>{{ 'analyses enregistrées' | t }}</span></div>
+      <div class="stat"><b>{{ formatScore(s.average_score) }}</b><span>{{ 'score moyen /10' | t }}</span></div>
+      <div class="stat"><b>{{ count('en_revue') + count('a_traiter') }}</b><span>{{ 'en attente de traitement' | t }}</span></div>
+      <div class="stat"><b>{{ count('publie') }}</b><span>{{ 'publiées sur le fil' | t }}</span></div>
     </div>
     @if (verdictBars().length) {
       <div class="card verdicts">
-        <div class="stack" role="img" aria-label="Répartition des verdicts">
+        <div class="stack" role="img" [attr.aria-label]="'Répartition des verdicts' | t">
           @for (v of verdictBars(); track v.key) { <i [style.width.%]="v.share" [style.background]="toneColor(v.tone)"></i> }
         </div>
         <div class="legend">
@@ -33,22 +33,22 @@
   <div class="toolbar">
     <div class="search">
       <app-icon name="search" [size]="20" />
-      <label class="visually-hidden" for="wq">Rechercher dans mes analyses</label>
-      <input id="wq" type="search" placeholder="Titre ou notes" autocomplete="off" [ngModel]="query()" (ngModelChange)="onQuery($event)">
+      <label class="visually-hidden" for="wq">{{ 'Rechercher dans mes analyses' | t }}</label>
+      <input id="wq" type="search" [placeholder]="'Titre ou notes' | t" autocomplete="off" [ngModel]="query()" (ngModelChange)="onQuery($event)">
     </div>
-    <a class="btn btn-sm" routerLink="/historique"><app-icon name="history" [size]="16" />Historique</a>
+    <a class="btn btn-sm" routerLink="/historique"><app-icon name="history" [size]="16" />{{ 'Historique' | t }}</a>
   </div>
 
-  <div class="filters" role="group" aria-label="Filtrer par suivi">
-    <span class="f-l">Suivi</span>
+  <div class="filters" role="group" [attr.aria-label]="'Filtrer par suivi' | t">
+    <span class="f-l">{{ 'Suivi' | t }}</span>
     @for (w of workflows; track w.key) {
       <button type="button" class="f" [class.on]="workflow() === w.key" [attr.aria-pressed]="workflow() === w.key" (click)="setWorkflow(w.key)">
         {{ w.label }} <small>{{ count(w.key) }}</small>
       </button>
     }
   </div>
-  <div class="filters" role="group" aria-label="Filtrer par verdict">
-    <span class="f-l">Verdict</span>
+  <div class="filters" role="group" [attr.aria-label]="'Filtrer par verdict' | t">
+    <span class="f-l">{{ 'Verdict' | t }}</span>
     @for (v of verdicts; track v.key) {
       <button type="button" class="f" [class.on]="verdict() === v.key" [attr.aria-pressed]="verdict() === v.key" (click)="setVerdict(v.key)">
         <i [style.background]="toneColor(v.tone)"></i>{{ v.label }}
@@ -56,8 +56,8 @@
     }
   </div>
   @if (stats()?.tags?.length) {
-    <div class="filters" role="group" aria-label="Filtrer par étiquette">
-      <span class="f-l">Étiquettes</span>
+    <div class="filters" role="group" [attr.aria-label]="'Filtrer par étiquette' | t">
+      <span class="f-l">{{ 'Étiquettes' | t }}</span>
       @for (t of stats()!.tags; track t.tag) {
         <button type="button" class="f" [class.on]="tag() === t.tag" [attr.aria-pressed]="tag() === t.tag" (click)="setTag(t.tag)">
           <app-icon name="tag" [size]="13" />{{ t.tag }} <small>{{ t.count }}</small>
@@ -65,14 +65,14 @@
       }
     </div>
   }
-  @if (filtered()) { <button type="button" class="link-btn" (click)="resetFilters()">Effacer les filtres</button> }
+  @if (filtered()) { <button type="button" class="link-btn" (click)="resetFilters()">{{ 'Effacer les filtres' | t }}</button> }
 
   @if (error()) { <p class="error-box" role="alert">{{ error() }}</p> }
 
   @if (loading()) {
     <div class="skeleton" aria-busy="true"><span></span><span></span><span></span></div>
   } @else {
-    <p class="muted count">{{ total() }} fiche{{ total() > 1 ? 's' : '' }}</p>
+    <p class="muted count">{{ total() | plural: '{n} fiche' : '{n} fiches' }}</p>
     <ul class="rows">
       @for (item of items(); track item.id) {
         <li class="row" [class.open]="editId() === item.id">
@@ -81,53 +81,53 @@
             <a class="t" [routerLink]="['/resultat', item.id]">
               <span class="n">{{ item.title }}</span>
               <span class="s">{{ date(item.created_at) }} · {{ verdictLabel(item.verdict) }}
-                @if (item.status !== 'done') { · <span [class.bad]="item.status === 'error'">{{ item.status === 'error' ? 'échec' : 'en cours' }}</span> }
+                @if (item.status !== 'done') { · <span [class.bad]="item.status === 'error'">{{ item.status === 'error' ? ('échec' | t) : ('en cours' | t) }}</span> }
               </span>
               @if (item.tags.length || item.notes) {
                 <span class="tags">
                   @for (t of item.tags; track t) { <span class="tagc">{{ t }}</span> }
-                  @if (item.notes) { <span class="note" [title]="item.notes"><app-icon name="edit" [size]="12" />note</span> }
+                  @if (item.notes) { <span class="note" [title]="item.notes"><app-icon name="edit" [size]="12" />{{ 'note' | t }}</span> }
                 </span>
               }
             </a>
             <app-score-ring [score]="item.global_score" [size]="42" [compact]="true" />
-            <label class="visually-hidden" [for]="'wf-' + item.id">Suivi de {{ item.title }}</label>
+            <label class="visually-hidden" [for]="'wf-' + item.id">{{ 'Suivi de {titre}' | t: { titre: item.title } }}</label>
             <select class="input wf" [id]="'wf-' + item.id" [ngModel]="item.workflow" (ngModelChange)="quickWorkflow(item, $event)">
               @for (w of workflows; track w.key) { <option [ngValue]="w.key">{{ w.label }}</option> }
             </select>
             <div class="acts">
-              <button type="button" class="icon-btn" (click)="edit(item)" [attr.aria-expanded]="editId() === item.id" [attr.aria-label]="'Modifier la fiche ' + item.title"><app-icon name="edit" [size]="18" /></button>
+              <button type="button" class="icon-btn" (click)="edit(item)" [attr.aria-expanded]="editId() === item.id" [attr.aria-label]="('Modifier la fiche ' | t) + item.title"><app-icon name="edit" [size]="18" /></button>
               @if (item.status === 'done') {
-                <a class="icon-btn" [routerLink]="['/fil']" [queryParams]="{ analyse: item.id }" [attr.aria-label]="'Publier ' + item.title + ' sur le fil'" title="Publier sur le fil"><app-icon name="share" [size]="18" /></a>
+                <a class="icon-btn" [routerLink]="['/fil']" [queryParams]="{ analyse: item.id }" [attr.aria-label]="('Publier ' | t) + item.title + (' sur le fil' | t)" [title]="'Publier sur le fil' | t"><app-icon name="share" [size]="18" /></a>
               }
-              <button type="button" class="icon-btn del" (click)="confirmId.set(item.id)" [attr.aria-label]="'Supprimer ' + item.title"><app-icon name="trash" [size]="18" /></button>
+              <button type="button" class="icon-btn del" (click)="confirmId.set(item.id)" [attr.aria-label]="('Supprimer ' | t) + item.title"><app-icon name="trash" [size]="18" /></button>
             </div>
           </div>
 
           @if (confirmId() === item.id) {
             <div class="confirm">
-              <span>Supprimer définitivement cette analyse et ses fichiers ?</span>
-              <button type="button" class="btn btn-sm btn-danger" (click)="remove(item)">Supprimer</button>
-              <button type="button" class="btn btn-sm" (click)="confirmId.set(null)">Annuler</button>
+              <span>{{ 'Supprimer définitivement cette analyse et ses fichiers ?' | t }}</span>
+              <button type="button" class="btn btn-sm btn-danger" (click)="remove(item)">{{ 'Supprimer' | t }}</button>
+              <button type="button" class="btn btn-sm" (click)="confirmId.set(null)">{{ 'Annuler' | t }}</button>
             </div>
           }
 
           @if (editId() === item.id) {
             <form class="editor" (ngSubmit)="save(item)">
-              <label class="field wide"><span>Titre</span>
+              <label class="field wide"><span>{{ 'Titre' | t }}</span>
                 <input class="input" name="title" [(ngModel)]="draft.title" maxlength="160" required></label>
-              <label class="field"><span>Suivi éditorial</span>
+              <label class="field"><span>{{ 'Suivi éditorial' | t }}</span>
                 <select class="input" name="workflow" [(ngModel)]="draft.workflow">
                   @for (w of workflows; track w.key) { <option [ngValue]="w.key">{{ w.label }}</option> }
                 </select></label>
-              <label class="field"><span>Étiquettes (séparées par des virgules)</span>
-                <input class="input" name="tags" [(ngModel)]="draft.tags" placeholder="politique, santé, Antananarivo"></label>
-              <label class="field wide"><span>Notes internes</span>
+              <label class="field"><span>{{ 'Étiquettes (séparées par des virgules)' | t }}</span>
+                <input class="input" name="tags" [(ngModel)]="draft.tags" [placeholder]="'politique, santé, Antananarivo' | t"></label>
+              <label class="field wide"><span>{{ 'Notes internes' | t }}</span>
                 <textarea class="input" name="notes" [(ngModel)]="draft.notes" maxlength="10000" rows="4"
-                          placeholder="Sources à recontacter, angle de l’article, échéance…"></textarea></label>
+                          [placeholder]="'Sources à recontacter, angle de l’article, échéance…' | t"></textarea></label>
               <div class="row-end wide">
-                <button type="button" class="btn btn-sm" (click)="editId.set(null)">Annuler</button>
-                <button type="submit" class="btn btn-sm btn-primary" [disabled]="saving()">{{ saving() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+                <button type="button" class="btn btn-sm" (click)="editId.set(null)">{{ 'Annuler' | t }}</button>
+                <button type="submit" class="btn btn-sm btn-primary" [disabled]="saving()">{{ saving() ? ('Enregistrement…' | t) : ('Enregistrer' | t) }}</button>
               </div>
             </form>
           }
@@ -135,16 +135,16 @@
       } @empty {
         <li class="empty">
           @if (filtered()) {
-            <h2>Aucune fiche</h2><p>Aucune analyse ne correspond à ces filtres.</p>
+            <h2>{{ 'Aucune fiche' | t }}</h2><p>{{ 'Aucune analyse ne correspond à ces filtres.' | t }}</p>
           } @else {
-            <h2>Votre espace est vide</h2><p>Chaque analyse que vous lancez est enregistrée ici, visible de vous seul.</p>
-            <a class="btn btn-primary" routerLink="/analyser" style="margin-top:14px">Lancer une analyse</a>
+            <h2>{{ 'Votre espace est vide' | t }}</h2><p>{{ 'Chaque analyse que vous lancez est enregistrée ici, visible de vous seul.' | t }}</p>
+            <a class="btn btn-primary" routerLink="/analyser" style="margin-top:14px">{{ 'Lancer une analyse' | t }}</a>
           }
         </li>
       }
     </ul>
     @if (hasMore()) {
-      <div class="more"><button type="button" class="btn btn-outline" (click)="loadMore()" [disabled]="loadingMore()">{{ loadingMore() ? 'Chargement…' : 'Afficher plus' }}</button></div>
+      <div class="more"><button type="button" class="btn btn-outline" (click)="loadMore()" [disabled]="loadingMore()">{{ loadingMore() ? ('Chargement…' | t) : ('Afficher plus' | t) }}</button></div>
     }
   }
   @if (notice()) { <div class="toast" role="status">{{ notice() }}</div> }

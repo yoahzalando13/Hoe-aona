@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { Observable, catchError, firstValueFrom, of, tap, throwError } from 'rxjs';
 import { Api } from './api';
+import { applyLang } from './i18n';
 import { User } from './models';
 
 /** Compte connecté, partagé par toute l'application. */
@@ -19,7 +20,7 @@ export class Auth {
   ensureLoaded(): Promise<User | null> {
     this.loaded ??= firstValueFrom(
       this.api.me().pipe(
-        tap((u) => this.user.set(u)),
+        tap((u) => { this.user.set(u); this.syncLang(); }),
         catchError(() => of(null)),
       ),
     );
@@ -37,6 +38,12 @@ export class Auth {
   set(user: User): void {
     this.user.set(user);
     this.loaded = Promise.resolve(user);
+    this.syncLang();
+  }
+
+  /** La langue choisie dans les paramètres du compte s'applique sur tous les appareils. */
+  private syncLang(): void {
+    this.api.getSettings().pipe(catchError(() => of(null))).subscribe((prefs) => applyLang(prefs?.ui_language));
   }
 
   logout(): void {

@@ -6,6 +6,7 @@ import { GLOBAL_VERDICTS, WORKFLOWS, formatScore, kindIcon, toneColor, verdictLa
 import { AnalysisListItem, AnalysisStats, GlobalVerdict, Workflow } from '../../core/models';
 import { Icon } from '../../shared/icon';
 import { ScoreRing } from '../../shared/score-ring';
+import { LOCALE, PluralPipe, TPipe, t } from '../../core/i18n';
 
 const PAGE_SIZE = 25;
 
@@ -13,7 +14,7 @@ interface Draft { title: string; notes: string; tags: string; workflow: Workflow
 
 @Component({
   selector: 'app-workspace-page',
-  imports: [FormsModule, RouterLink, Icon, ScoreRing],
+  imports: [FormsModule, RouterLink, Icon, ScoreRing, TPipe, PluralPipe],
   templateUrl: './workspace-page.html',
   styleUrl: './workspace-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -129,7 +130,7 @@ export class WorkspacePage {
         this.saving.set(false);
         this.editId.set(null);
         this.loadStats();
-        this.flash('Fiche enregistrée');
+        this.flash(t('Fiche enregistrée'));
       },
       error: (err) => { this.error.set(errorMessage(err)); this.saving.set(false); },
     });
@@ -152,7 +153,7 @@ export class WorkspacePage {
         this.total.update((t) => Math.max(0, t - 1));
         this.confirmId.set(null);
         this.loadStats();
-        this.flash('Analyse supprimée');
+        this.flash(t('Analyse supprimée'));
       },
       error: (err) => this.error.set(errorMessage(err)),
     });
@@ -163,7 +164,7 @@ export class WorkspacePage {
   }
 
   protected date(iso: string): string {
-    return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+    return new Date(iso).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
   private flash(message: string): void {

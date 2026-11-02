@@ -49,3 +49,6 @@ code { font-size: 12px; background: var(--soft); padding: 1px 5px; border-radius
 }
 @media (min-width: 900px) { .toast { bottom: 24px; } }
 .account { color: inherit; text-decoration: none; }
+
+/* Seule la section « Compte » garde des icônes colorées ; ailleurs, icône seule, sans fond ni couleur. */
+.list:not(.account-list) .ico { background: transparent; color: var(--ink2); }

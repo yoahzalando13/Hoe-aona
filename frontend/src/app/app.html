@@ -1,35 +1,70 @@
 <div class="shell" [class.guest]="!auth.user()">
   @if (auth.user(); as me) {
-  <nav class="nav" aria-label="Navigation principale">
-    <a class="brand" routerLink="/fil" aria-label="Hoe-aona?, accueil">
+  <nav class="nav" [attr.aria-label]="'Navigation principale' | t">
+    <a class="brand" routerLink="/fil" [attr.aria-label]="'Hoe-aona?, accueil' | t">
       <img src="logo-hoe-aona.svg" width="28" height="28" alt="" aria-hidden="true" style="object-fit: contain" />
-      <span>Hoe-aona?</span>
+      <span class="brand-t">{{ 'Hoe aona?' | t }}</span>
     </a>
     @for (item of nav(); track item.path) {
     <a
       class="nav-item"
+      [class.secondary]="!item.primary"
       [routerLink]="item.path"
       routerLinkActive="on"
       #rla="routerLinkActive"
       [attr.aria-current]="rla.isActive ? 'page' : null"
+      [attr.title]="item.label"
     >
       <span class="pill"><app-icon [name]="item.icon" /></span>
       <span class="label">{{ item.label }}</span>
     </a>
     }
+    <!-- Mobile : les entrées secondaires passent dans le menu « Plus » -->
+    <button
+      type="button"
+      class="nav-item more"
+      [class.on]="moreOpen() || secondaryActive()"
+      (click)="moreOpen.set(!moreOpen())"
+      aria-haspopup="menu"
+      [attr.aria-expanded]="moreOpen()"
+    >
+      <span class="pill"><app-icon [name]="moreOpen() ? 'close' : 'menu'" /></span>
+      <span class="label">{{ 'Plus' | t }}</span>
+    </button>
     <div class="me">
-      <a class="me-link" [routerLink]="['/profil', me.id]" routerLinkActive="on">
+      <a class="me-link" [routerLink]="['/profil', me.id]" routerLinkActive="on" [attr.title]="me.display_name">
         <span class="avatar" [class]="avatarTone(me.id)">{{ initials(me.display_name) }}</span>
         <span class="me-t">
           <span class="me-n">{{ me.display_name }}</span>
-          <span class="me-o">{{ me.organization || (me.role === 'admin' ? 'Administration' : 'Personnel média') }}</span>
+          <span class="me-o">{{ me.organization || (me.role === 'admin' ? ('Administration' | t) : ('Personnel média' | t)) }}</span>
         </span>
       </a>
-      <button type="button" class="icon-btn" (click)="auth.logout()" aria-label="Se déconnecter" title="Se déconnecter">
+      <button type="button" class="icon-btn logout" (click)="auth.logout()" [attr.aria-label]="'Se déconnecter' | t" [title]="'Se déconnecter' | t">
         <app-icon name="logout" [size]="19" />
       </button>
     </div>
   </nav>
+
+  @if (moreOpen()) {
+  <div class="sheet-backdrop" (click)="moreOpen.set(false)"></div>
+  <div class="sheet" role="menu" [attr.aria-label]="'Plus de pages' | t" (keydown.escape)="moreOpen.set(false)">
+    <a class="sheet-me" role="menuitem" [routerLink]="['/profil', me.id]" (click)="moreOpen.set(false)">
+      <span class="avatar" [class]="avatarTone(me.id)">{{ initials(me.display_name) }}</span>
+      <span class="me-t">
+        <span class="me-n">{{ me.display_name }}</span>
+        <span class="me-o">{{ 'Voir mon profil' | t }}</span>
+      </span>
+    </a>
+    @for (item of secondary(); track item.path) {
+    <a class="sheet-item" role="menuitem" [routerLink]="item.path" routerLinkActive="on" (click)="moreOpen.set(false)">
+      <app-icon [name]="item.icon" [size]="20" />{{ item.label }}
+    </a>
+    }
+    <button type="button" class="sheet-item danger" role="menuitem" (click)="moreOpen.set(false); auth.logout()">
+      <app-icon name="logout" [size]="20" />{{ 'Se déconnecter' | t }}
+    </button>
+  </div>
+  }
   }
   <main class="content">
     <router-outlet />

@@ -74,6 +74,16 @@ Chaque preuve indique son lien, son extrait, sa date de publication, sa fiabilit
 
 Sous chaque affirmation, le bloc **Qui contacter pour confirmer** propose les institutions compétentes (site, téléphone, e-mail) tirées de l'**annuaire des sources officielles** (`/sources`). L'annuaire est prérempli avec 21 institutions dont les coordonnées ont été relevées le 2 novembre 2026 sur leurs propres sites ; les administrateurs l'enrichissent (ministères de la Santé, du Commerce, de l'Agriculture… dont le site n'a pas pu être vérifié) et tiennent les mots-clés à jour.
 
+## Langues : malagasy, français, anglais
+
+L'interface est disponible en **malagasy**, **français** et **anglais**. Le sélecteur MG / FR / EN se trouve sur l'écran de connexion, dans la barre latérale (menu « Plus » sur téléphone) et dans les Paramètres. Le choix est mémorisé dans le navigateur ; à défaut, la langue du navigateur est utilisée.
+
+- Pour un compte connecté, changer de langue règle aussi la **langue des contenus rédigés par l'IA** : résumé, conclusions, tests de raisonnement et article.
+- Dates et nombres suivent la langue choisie.
+- Dans le code, chaque texte est écrit en français et passe par le traducteur : `{{ 'Fil média' | t }}`, `t('Analyse supprimée')`, `{{ n | plural: '{n} analyse' : '{n} analyses' }}`. Les traductions sont dans `frontend/src/app/i18n/en.ts` et `mg.ts` ; un texte absent s'affiche en français.
+- `python scripts/check_i18n.py` signale toute clé sans traduction.
+- Les traductions malgaches sont à faire relire par un locuteur natif de la rédaction avant une mise en service.
+
 ## Tests de raisonnement
 
 En plus des preuves, chaque affirmation passe par des tests de raisonnement affichés dans la page Résultat :

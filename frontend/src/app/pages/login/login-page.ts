@@ -4,10 +4,12 @@ import { Router } from '@angular/router';
 import { Api, errorMessage } from '../../core/api';
 import { Auth } from '../../core/auth';
 import { AuthConfig } from '../../core/models';
+import { TPipe } from '../../core/i18n';
+import { LangSwitch } from '../../shared/lang-switch';
 
 @Component({
   selector: 'app-login-page',
-  imports: [FormsModule],
+  imports: [FormsModule, TPipe, LangSwitch],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
