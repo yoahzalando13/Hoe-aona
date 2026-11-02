@@ -20,7 +20,7 @@ from typing import Any
 from ..config import BACKEND_DIR, Settings
 from ..tools.registry import TOOLS
 
-log = logging.getLogger("Hoe aona?.mcp")
+log = logging.getLogger("hoe-aona.mcp")
 
 
 def _expand_env(value: str) -> str:

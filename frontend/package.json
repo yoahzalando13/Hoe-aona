@@ -1,5 +1,5 @@
 {
-  "name": "Hoe aona?",
+  "name": "hoe-aona",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@angular/build": "^20.3.0",
-    "@angular/cli": "^20.3.0",
+    "@angular/cli": "^22.2.5",
     "@angular/compiler-cli": "^20.3.0",
     "typescript": "~5.8.0"
   }

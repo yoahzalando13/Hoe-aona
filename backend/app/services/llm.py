@@ -17,7 +17,7 @@ import httpx
 
 from ..config import Settings, get_settings
 
-log = logging.getLogger("Hoe aona?.llm")
+log = logging.getLogger("hoe-aona.llm")
 
 
 class LLMUnavailable(RuntimeError):

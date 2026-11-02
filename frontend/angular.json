@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "Hoe aona?": {
+    "hoe-aona": {
       "projectType": "application",
       "root": "",
       "sourceRoot": "src",
@@ -12,7 +12,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "outputPath": "dist/Hoe aona?",
+            "outputPath": "dist/hoe-aona",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
@@ -22,8 +22,16 @@
           "configurations": {
             "production": {
               "budgets": [
-                { "type": "initial", "maximumWarning": "600kB", "maximumError": "1MB" },
-                { "type": "anyComponentStyle", "maximumWarning": "8kB", "maximumError": "16kB" }
+                {
+                  "type": "initial",
+                  "maximumWarning": "600kB",
+                  "maximumError": "1MB"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "8kB",
+                  "maximumError": "16kB"
+                }
               ],
               "outputHashing": "all"
             },
@@ -39,12 +47,15 @@
           "builder": "@angular/build:dev-server",
           "options": { "proxyConfig": "proxy.conf.json" },
           "configurations": {
-            "production": { "buildTarget": "Hoe aona?:build:production" },
-            "development": { "buildTarget": "Hoe aona?:build:development" }
+            "production": { "buildTarget": "hoe-aona:build:production" },
+            "development": { "buildTarget": "hoe-aona:build:development" }
           },
           "defaultConfiguration": "development"
         }
       }
     }
+  },
+  "cli": {
+    "analytics": "d9c69214-6ae0-4f95-936d-70adb4cdbc5f"
   }
 }

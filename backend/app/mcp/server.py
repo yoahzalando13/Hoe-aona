@@ -1,4 +1,4 @@
-"""Serveur MCP « Hoe aona?-tools » (transport stdio).
+"""Serveur MCP « hoe-aona-tools » (transport stdio).
 
 Expose chaque source de preuves comme un outil MCP. Il est lancé automatiquement par le
 backend (voir gateway.py), mais peut aussi être branché à n'importe quel client MCP :
@@ -11,19 +11,21 @@ from mcp.server.fastmcp import FastMCP
 
 from ..tools import factcheck, gdelt, sightengine, tavily, webpage, wikipedia, worldbank
 
-mcp = FastMCP("Hoe aona?-tools")
+mcp = FastMCP("hoe-aona-tools")
 
 
-@mcp.tool()
-async def factcheck_search(query: str, language: str = "fr", max_results: int = 6) -> dict:
-    """Fact-checks déjà publiés (ClaimReview via Google Fact Check Tools) correspondant à une affirmation."""
-    return await factcheck.search(query, language, max_results)
-
-
-@mcp.tool()
-async def factcheck_image_search(image_url: str, max_results: int = 6) -> dict:
-    """Fact-checks publiés portant sur une image accessible publiquement."""
-    return await factcheck.image_search(image_url, max_results)
+# Google Fact Check est désactivé pour ce projet. L'API Tavily est désormais
+# la source principale pour les recherches web.
+# @mcp.tool()
+# async def factcheck_search(query: str, language: str = "fr", max_results: int = 6) -> dict:
+#     """Fact-checks déjà publiés (ClaimReview via Google Fact Check Tools) correspondant à une affirmation."""
+#     return await factcheck.search(query, language, max_results)
+#
+#
+# @mcp.tool()
+# async def factcheck_image_search(image_url: str, max_results: int = 6) -> dict:
+#     """Fact-checks publiés portant sur une image accessible publiquement."""
+#     return await factcheck.image_search(image_url, max_results)
 
 
 @mcp.tool()

@@ -16,7 +16,7 @@ from .evidence import Collected
 from .llm import LLMClient
 from .textutils import numbers_in, truncate
 
-log = logging.getLogger("Hoe aona?.stance")
+log = logging.getLogger("hoe-aona.stance")
 
 LANG_NAMES = {"fr": "français", "en": "anglais", "mg": "malgache"}
 

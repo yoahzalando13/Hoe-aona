@@ -15,7 +15,7 @@ from .llm import LLMClient
 from .stance import _fmt_value
 from .textutils import truncate
 
-log = logging.getLogger("Hoe aona?.article")
+log = logging.getLogger("hoe-aona.article")
 
 LANG_NAMES = {"fr": "français", "en": "anglais", "mg": "malgache"}
 

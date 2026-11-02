@@ -1,6 +1,6 @@
 {
   "servers": {
-    "Hoe aona?-tools": {
+    "hoe-aona-tools": {
       "enabled": true,
       "command": "python",
       "args": ["-m", "app.mcp.server"],
@@ -10,7 +10,7 @@
       "enabled": false,
       "command": "npx",
       "args": ["-y", "tavily-mcp@latest"],
-      "env": {"TAVILY_API_KEY": "${TAVILY_API_KEY}"},
+      "env": { "TAVILY_API_KEY": "${TAVILY_API_KEY}" },
       "description": "Exemple de serveur MCP externe. Ses outils deviennent appelables via gateway.call(nom_outil, ...)"
     }
   }

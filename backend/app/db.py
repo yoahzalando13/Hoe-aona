@@ -152,5 +152,5 @@ def get_db() -> Database:
     global _db
     if _db is None:
         from .config import get_settings
-        _db = Database(get_settings().data_dir / "Hoe aona?.sqlite3")
+        _db = Database(get_settings().data_dir / "hoe-aona.sqlite3")
     return _db

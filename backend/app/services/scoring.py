@@ -11,7 +11,7 @@ CLAIM_LABELS = {
     "vrai": "Vrai",
     "plutot_vrai": "Plutôt vrai",
     "mitige": "Mitigé",
-    "non_Hoe aona?ble": "Non vérifiable",
+    "non_verifiable": "Non vérifiable",
     "plutot_faux": "Plutôt faux",
     "faux": "Faux",
 }
@@ -75,7 +75,7 @@ def claim_truth(evidence: Sequence[Evidence], statistics: Sequence[Statistic] = 
 
 def claim_verdict(score: float, weight: float) -> str:
     if weight < MIN_EVIDENCE_WEIGHT:
-        return "non_Hoe aona?ble"
+        return "non_verifiable"
     if score >= 8:
         return "vrai"
     if score >= 6:

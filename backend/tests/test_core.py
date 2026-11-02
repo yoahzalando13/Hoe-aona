@@ -83,9 +83,9 @@ def test_verdict_factcheck():
     assert scoring.rating_to_stance("Trompeur") == ("refutes", 0.5)
 
 
-def test_sans_preuve_non_Hoe aona?ble():
+def test_sans_preuve_non_verifiable():
     score, weight = scoring.claim_truth([], [])
-    assert score == 5.0 and scoring.claim_verdict(score, weight) == "non_Hoe aona?ble"
+    assert score == 5.0 and scoring.claim_verdict(score, weight) == "non_verifiable"
 
 
 def test_preuves_qui_contredisent():

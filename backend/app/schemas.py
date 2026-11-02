@@ -7,7 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 Stance = Literal["supports", "refutes", "context"]
-ClaimVerdict = Literal["vrai", "plutot_vrai", "mitige", "non_Hoe aona?ble", "plutot_faux", "faux"]
+ClaimVerdict = Literal["vrai", "plutot_vrai", "mitige", "non_verifiable", "plutot_faux", "faux"]
 GlobalVerdict = Literal["fiable", "plutot_fiable", "a_verifier", "douteux"]
 Status = Literal["pending", "running", "done", "error"]
 InputKind = Literal["text", "image", "document", "audio", "url"]
@@ -106,7 +106,7 @@ class Claim(BaseModel):
     search_query: str
     truth_score: float = 5.0
     evidence_weight: float = 0.0
-    verdict: ClaimVerdict = "non_Hoe aona?ble"
+    verdict: ClaimVerdict = "non_verifiable"
     verdict_label: str = "Non vérifiable"
     conclusion: str = ""
     arguments_for: list[str] = []

@@ -3,13 +3,13 @@ from __future__ import annotations
 
 from typing import Awaitable, Callable
 
-from . import factcheck, gdelt, sightengine, tavily, webpage, wikipedia, worldbank
+from . import gdelt, sightengine, tavily, webpage, wikipedia, worldbank
 
 ToolFn = Callable[..., Awaitable[dict]]
 
 TOOLS: dict[str, tuple[ToolFn, str]] = {
-    "factcheck_search": (factcheck.search, "Fact-checks publiés (Google Fact Check Tools) pour une affirmation"),
-    "factcheck_image_search": (factcheck.image_search, "Fact-checks publiés portant sur une image (URL publique)"),
+    # Google Fact Check est temporairement désactivé : l'application ne s'appuie
+    # que sur Tavily pour la recherche web générale.
     "wikipedia_search": (wikipedia.search, "Résumés d'articles Wikipedia pertinents, avec image"),
     "news_search": (gdelt.search, "Articles de presse mondiaux récents (GDELT DOC 2.0)"),
     "web_search": (tavily.search, "Recherche web générale (Tavily)"),

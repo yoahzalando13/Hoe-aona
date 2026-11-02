@@ -87,7 +87,8 @@ async def gather(draft: ClaimDraft, gateway: ToolGateway, prefs: Preferences, se
     lang = draft.language if draft.language in {"fr", "en", "mg", "es", "pt", "de"} else "fr"
 
     calls = {
-        "factcheck_search": gateway.call("factcheck_search", query=draft.text, language=lang),
+        # Google Fact Check est désactivé pour ce projet. Les preuves proviennent
+        # désormais de Wikipedia, GDELT, Tavily et des données officielles.
         "wikipedia_search": gateway.call("wikipedia_search", query=draft.search_query, language=lang),
         "news_search": gateway.call("news_search", query=draft.search_query_en or draft.search_query),
         "web_search": gateway.call("web_search", query=draft.text),
@@ -104,15 +105,8 @@ async def gather(draft: ClaimDraft, gateway: ToolGateway, prefs: Preferences, se
         if c.url and c.url not in candidates:
             candidates[c.url] = c
 
-    for item in _note(results["factcheck_search"], collected, "factcheck_search"):
-        add(Candidate(
-            origin="factcheck", url=item["url"], title=item.get("title") or item.get("claim_text", ""),
-            publisher=item.get("publisher", ""), published_at=item.get("review_date"),
-            rating=item.get("rating"),
-            excerpt=truncate(f"Affirmation examinée : « {item.get('claim_text', '')} ». "
-                             f"Verdict publié : {item.get('rating') or 'non précisé'}.", 420),
-            relevance=overlap(draft.text, item.get("claim_text", "")),
-        ))
+    # Google Fact Check est désactivé : l'ancienne logique a été retirée pour
+    # laisser Tavily comme moteur principal de recherche web (voir app/tools/registry.py).
     for item in _note(results["wikipedia_search"], collected, "wikipedia_search"):
         excerpt, score = best_excerpt(split_sentences(item.get("extract", "")) or [item.get("extract", "")], draft.text)
         add(Candidate(

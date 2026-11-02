@@ -16,7 +16,7 @@ from .extraction import Extracted, extract_file, extract_text_input
 from .llm import LLMClient
 from .textutils import truncate
 
-log = logging.getLogger("Hoe aona?.pipeline")
+log = logging.getLogger("hoe-aona.pipeline")
 
 
 def load_preferences() -> Preferences:
@@ -87,9 +87,9 @@ def _criteria(inputs: list[InputSummary], claims: list[Claim], origin_rel: list[
 
     confirmed = sum(1 for c in claims if c.verdict in ("vrai", "plutot_vrai"))
     refuted = sum(1 for c in claims if c.verdict in ("faux", "plutot_faux"))
-    unHoe aona?ble = sum(1 for c in claims if c.verdict == "non_Hoe aona?ble")
+    non_verifiable = sum(1 for c in claims if c.verdict == "non_verifiable")
     ver_summary = (f"{confirmed} affirmation(s) sur {len(claims)} confirmée(s), {refuted} contredite(s)"
-                   + (f", {unHoe aona?ble} non vérifiable(s)" if unHoe aona?ble else "")) if claims else \
+                   + (f", {non_verifiable} non vérifiable(s)" if non_verifiable else "")) if claims else \
         "Aucune affirmation vérifiable identifiée"
     ver_details = [f"« {truncate(c.text, 90)} » : {c.verdict_label} ({c.truth_score}/10)" for c in claims]
 

@@ -9,7 +9,7 @@ from ..tools import worldbank
 from .llm import LLMClient
 from .textutils import keywords, numbers_in, split_sentences, truncate
 
-log = logging.getLogger("Hoe aona?.claims")
+log = logging.getLogger("hoe-aona.claims")
 
 SYSTEM = (
     "Tu es un fact-checker professionnel. Tu identifies les affirmations vérifiables, sans juger leur "

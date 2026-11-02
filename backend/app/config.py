@@ -14,7 +14,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Vérifia"
     data_dir: Path = BACKEND_DIR / "data"
-    frontend_dist: Path = BACKEND_DIR.parent / "frontend" / "dist" / "Hoe aona?" / "browser"
+    frontend_dist: Path = BACKEND_DIR.parent / "frontend" / "dist" / "hoe-aona" / "browser"
     cors_origins: list[str] = ["http://localhost:4200"]
     max_upload_mb: int = 20
 

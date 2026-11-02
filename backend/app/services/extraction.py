@@ -13,7 +13,7 @@ from ..config import get_settings
 from . import ai_detection
 from .llm import LLMClient, LLMUnavailable, parse_json
 
-log = logging.getLogger("Hoe aona?.extraction")
+log = logging.getLogger("hoe-aona.extraction")
 
 IMAGE_PROMPT = (
     "Tu aides un fact-checker. Analyse cette image et réponds en JSON : "
