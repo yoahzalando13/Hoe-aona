@@ -59,9 +59,7 @@
   }
 
   } @else if (a.status !== 'done') {
-  <div class="card progress">
-    <app-agent-progress [analysis]="a" />
-  </div>
+  <app-agent-progress class="live-progress" [analysis]="a" />
 
   } @else { @if (!a.editable && a.owner_name) {
   <p class="card readonly">

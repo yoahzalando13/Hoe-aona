@@ -188,3 +188,10 @@ blockquote { margin: 8px 0 0; padding: 2px 0 2px 12px; border-left: 3px solid va
   .article { padding: 16px 14px; }
   .art-actions .btn { flex: 1 1 auto; justify-content: center; }
 }
+
+/* Analyse en cours : pas de carte, juste l'étape courante */
+.live-progress { max-width: 560px; margin: 48px auto; padding: 0 4px; }
+
+/* Icônes seules : ni fond coloré ni couleur (scores, badges et textes gardent les leurs). */
+.result .chip-icon { background: transparent; color: var(--ink2); }
+.arg-col h4 app-icon, .essentials app-icon, .published app-icon { color: var(--ink2); }

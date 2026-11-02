@@ -1,42 +1,18 @@
 @let a = analysis();
 @if (mode() === 'live') {
-<div class="live-head">
-  <h2>{{ running() ? ('Analyse en cours' | t) : ('Analyse terminée' | t) }}</h2>
-  <span class="muted meta">{{ a.progress }} % · {{ seconds(elapsed()) }}
-    @if (remaining(); as r) { · {{ 'reste ~{duree}' | t: { duree: seconds(r) } }} }</span>
-</div>
-<div class="bar thin" role="progressbar" [attr.aria-valuenow]="a.progress" aria-valuemin="0" aria-valuemax="100"
-     [attr.aria-label]="'Avancement de l’analyse' | t">
-  <i [style.width.%]="a.progress"></i>
-</div>
-
-<ol class="steps" #stepsBox (scroll)="onScroll($event)" aria-live="polite">
-  @for (e of shown(); track trackEvent($index, e); let i = $index) {
-  <li class="stp" [class]="e.status" [class.sub]="!!e.tool" [class.active]="i === activeIndex()">
-    <span class="mk">
-      @if (i === activeIndex()) {
-        <span class="dots" [attr.aria-label]="'en cours' | t"><i></i><i></i><i></i></span>
-      } @else if (e.status === 'error') {
-        <app-icon name="alert" [size]="13" />
-      } @else if (e.status === 'running') {
-        <span class="ring"></span>
-      } @else {
-        <app-icon name="check" [size]="13" />
-      }
-    </span>
+<!-- Une seule étape à la fois : celle en cours remplace la précédente. -->
+<div class="now" aria-live="polite">
+  @for (e of current(); track e.key) {
+  <div class="now-step">
+    <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
     <span class="tx">
       <span class="msg">{{ e.message }}</span>
       @if (e.detail) { <span class="det">{{ e.detail }}</span> }
     </span>
-  </li>
+  </div>
   }
-  @if (running() && !shown().length) {
-  <li class="stp active">
-    <span class="mk"><span class="dots"><i></i><i></i><i></i></span></span>
-    <span class="tx"><span class="msg">{{ 'Les agents démarrent…' | t }}</span></span>
-  </li>
-  }
-</ol>
+  <span class="muted meta">{{ a.progress }} % · {{ seconds(elapsed()) }}</span>
+</div>
 } @else {
 <div class="log-head">
   <h3>{{ 'Journal des agents' | t }}</h3>

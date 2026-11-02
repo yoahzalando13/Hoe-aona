@@ -29,7 +29,6 @@ export class AgentProgress {
   readonly mode = input<'live' | 'log'>('live');
 
   private readonly logBox = viewChild<ElementRef<HTMLElement>>('logBox');
-  private readonly stepsBox = viewChild<ElementRef<HTMLElement>>('stepsBox');
   /** Nombre d'étapes déjà affichées : en direct, elles apparaissent une par une. */
   private readonly revealed = signal(0);
   private revealTimer: ReturnType<typeof setInterval> | null = null;
@@ -41,12 +40,13 @@ export class AgentProgress {
 
   /** Étapes visibles en direct (leur statut, lui, suit toujours la dernière mise à jour du serveur). */
   protected readonly shown = computed(() => this.events().slice(0, this.revealed()));
-  /** Étape portant les trois points animés : la dernière affichée encore en cours, sinon la dernière affichée. */
-  protected readonly activeIndex = computed(() => {
+  /** Étape affichée en direct : la dernière révélée encore en cours, sinon la dernière révélée. */
+  protected readonly current = computed(() => {
     const list = this.shown();
-    if (!this.running()) return -1;
-    for (let i = list.length - 1; i >= 0; i--) if (list[i].status === 'running') return i;
-    return list.length - 1;
+    const e = [...list].reverse().find((x) => x.status === 'running') ?? list[list.length - 1];
+    const i = e ? list.indexOf(e) : -1;
+    if (!e) return [{ key: 'start', message: t('Les agents démarrent…'), detail: '' }];
+    return [{ key: `${i}-${e.at}`, message: e.message, detail: e.status === 'running' ? e.detail : '' }];
   });
 
   protected readonly elapsed = computed(() => {
@@ -83,9 +83,7 @@ export class AgentProgress {
             return;
           }
           this.revealed.update((n) => n + 1);
-          const box = this.stepsBox()?.nativeElement;
-          if (box && this.follow()) queueMicrotask(() => box.scrollTop = box.scrollHeight);
-        }, 350);
+        }, 450);
       }
     });
     // Défilement automatique du journal tant que l'utilisateur n'est pas remonté le lire.
