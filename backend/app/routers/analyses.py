@@ -1,18 +1,28 @@
-"""Routes des analyses : création (multipart), suivi, historique, article."""
+"""Routes des analyses : création (multipart), suivi, base personnelle (back office), article.
+
+Chaque analyse appartient à un compte : on ne voit que les siennes, sauf celles publiées sur le fil
+(lecture seule pour le personnel média) et l'accès complet des administrateurs.
+"""
 from __future__ import annotations
 
+import csv
+import io
 import json
 import re
 import shutil
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from typing import Any
+
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
+
+from ..auth import current_user
 
 from ..config import get_settings
 from ..db import get_db
-from ..schemas import AnalysisOut, AnalysisPage, AnalysisResult, Article
+from ..schemas import AnalysisOut, AnalysisPage, AnalysisResult, AnalysisStats, AnalysisUpdate, Article, Workflow
 from ..services import article as article_service
 from ..services.llm import LLMClient
 from ..services.pipeline import load_preferences, run_analysis
@@ -59,9 +69,32 @@ def _parse_urls(raw: str) -> list[str]:
     return urls[:10]
 
 
-def _to_out(record: dict) -> AnalysisOut:
-    return AnalysisOut(**{k: record.get(k) for k in AnalysisOut.model_fields if k != "result"},
-                       result=AnalysisResult(**record["result"]) if record.get("result") else None)
+_COMPUTED = {"result", "owner_id", "owner_name", "editable"}
+
+
+def _to_out(record: dict, viewer: dict[str, Any]) -> AnalysisOut:
+    owner = get_db().get_user(record["user_id"]) if record.get("user_id") else None
+    fields = {k: record.get(k) for k in AnalysisOut.model_fields if k not in _COMPUTED and record.get(k) is not None}
+    return AnalysisOut(**fields, result=AnalysisResult(**record["result"]) if record.get("result") else None,
+                       owner_id=record.get("user_id"), owner_name=owner["display_name"] if owner else None,
+                       editable=record.get("user_id") == viewer["id"])
+
+
+def _readable(analysis_id: str, user: dict[str, Any]) -> dict:
+    """Analyse lisible : la sienne, une analyse publiée sur le fil, ou toutes pour un administrateur."""
+    db = get_db()
+    record = db.get_analysis(analysis_id)
+    if not record or not (record.get("user_id") == user["id"] or user["role"] == "admin"
+                          or db.is_analysis_published(analysis_id)):
+        raise HTTPException(404, "Analyse introuvable")
+    return record
+
+
+def _owned(analysis_id: str, user: dict[str, Any]) -> dict:
+    record = get_db().get_analysis(analysis_id)
+    if not record or record.get("user_id") != user["id"]:
+        raise HTTPException(404, "Analyse introuvable dans votre espace")
+    return record
 
 
 @router.post("", response_model=AnalysisOut, status_code=202)
@@ -70,6 +103,7 @@ async def create_analysis(
     text: str = Form(""),
     urls: str = Form(""),
     files: list[UploadFile] = File(default=[]),
+    user: dict[str, Any] = Depends(current_user),
 ):
     settings = get_settings()
     url_list = _parse_urls(urls)
@@ -106,52 +140,82 @@ async def create_analysis(
     title = truncate(first.get("text") or first.get("name") or first.get("url") or "Analyse", 80)
     kinds = {i["kind"] for i in inputs}
     input_kind = kinds.pop() if len(kinds) == 1 else "mixte"
-    get_db().create_analysis(title, input_kind, inputs, analysis_id)
+    get_db().create_analysis(title, input_kind, inputs, analysis_id, user_id=user["id"])
     background.add_task(run_analysis, analysis_id)
-    return _to_out(get_db().get_analysis(analysis_id))
+    return _to_out(get_db().get_analysis(analysis_id), user)
 
 
 @router.get("", response_model=AnalysisPage)
-async def list_analyses(q: str = "", verdict: str | None = None,
-                        limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0)):
-    items, total = get_db().list_analyses(q.strip(), verdict, limit, offset)
+async def list_analyses(q: str = "", verdict: str | None = None, workflow: Workflow | None = None,
+                        tag: str | None = None, limit: int = Query(20, ge=1, le=100), offset: int = Query(0, ge=0),
+                        user: dict[str, Any] = Depends(current_user)):
+    items, total = get_db().list_analyses(q.strip(), verdict, limit, offset, user_id=user["id"],
+                                          workflow=workflow, tag=(tag or "").strip() or None)
     return {"items": items, "total": total}
 
 
+@router.get("/stats", response_model=AnalysisStats)
+async def stats(user: dict[str, Any] = Depends(current_user)):
+    return get_db().analysis_stats(user["id"])
+
+
+@router.get("/export.csv", response_class=PlainTextResponse)
+async def export_csv(user: dict[str, Any] = Depends(current_user)):
+    buf = io.StringIO()
+    writer = csv.writer(buf, delimiter=";")
+    writer.writerow(["id", "date", "titre", "type", "statut", "score", "verdict", "suivi", "etiquettes", "notes"])
+    for r in get_db().all_analysis_rows(user["id"]):
+        writer.writerow([r["id"], r["created_at"], r["title"], r["input_kind"], r["status"],
+                         "" if r["global_score"] is None else str(r["global_score"]).replace(".", ","),
+                         r["verdict"] or "", r["workflow"], ", ".join(r["tags"]), r["notes"]])
+    return Response("\ufeff" + buf.getvalue(), media_type="text/csv; charset=utf-8",
+                    headers={"Content-Disposition": 'attachment; filename="mes-analyses.csv"'})
+
+
 @router.get("/{analysis_id}", response_model=AnalysisOut)
-async def get_analysis(analysis_id: str):
-    record = get_db().get_analysis(analysis_id)
-    if not record:
-        raise HTTPException(404, "Analyse introuvable")
-    return _to_out(record)
+async def get_analysis(analysis_id: str, user: dict[str, Any] = Depends(current_user)):
+    return _to_out(_readable(analysis_id, user), user)
+
+
+@router.patch("/{analysis_id}", response_model=AnalysisOut)
+async def update_analysis(analysis_id: str, payload: AnalysisUpdate, user: dict[str, Any] = Depends(current_user)):
+    _owned(analysis_id, user)
+    fields = payload.model_dump(exclude_none=True)
+    if "title" in fields:
+        fields["title"] = fields["title"].strip()
+    if fields:
+        get_db().update_analysis(analysis_id, **fields)
+    return _to_out(get_db().get_analysis(analysis_id), user)
 
 
 @router.delete("/{analysis_id}", status_code=204)
-async def delete_analysis(analysis_id: str):
-    if not get_db().delete_analysis(analysis_id):
+async def delete_analysis(analysis_id: str, user: dict[str, Any] = Depends(current_user)):
+    record = get_db().get_analysis(analysis_id)
+    if not record or not (record.get("user_id") == user["id"] or user["role"] == "admin"):
         raise HTTPException(404, "Analyse introuvable")
+    get_db().delete_analysis(analysis_id)
     shutil.rmtree(get_settings().data_dir / "uploads" / analysis_id, ignore_errors=True)
 
 
-def _result(analysis_id: str) -> AnalysisResult:
-    record = get_db().get_analysis(analysis_id)
-    if not record or not record.get("result"):
+def _result(record: dict) -> AnalysisResult:
+    if not record.get("result"):
         raise HTTPException(404, "Résultat indisponible")
     return AnalysisResult(**record["result"])
 
 
 @router.post("/{analysis_id}/article", response_model=Article)
-async def regenerate_article(analysis_id: str):
-    result = _result(analysis_id)
+async def regenerate_article(analysis_id: str, user: dict[str, Any] = Depends(current_user)):
+    result = _result(_owned(analysis_id, user))
     warnings: list[str] = []
-    result.article = await article_service.generate(result, LLMClient(), load_preferences().report_language, warnings)
+    result.article = await article_service.generate(result, LLMClient(), load_preferences(user["id"]).report_language,
+                                                    warnings)
     get_db().update_analysis(analysis_id, result=result.model_dump(mode="json"))
     return result.article
 
 
 @router.get("/{analysis_id}/article.md", response_class=PlainTextResponse)
-async def article_markdown(analysis_id: str):
-    result = _result(analysis_id)
+async def article_markdown(analysis_id: str, user: dict[str, Any] = Depends(current_user)):
+    result = _result(_readable(analysis_id, user))
     if not result.article:
         raise HTTPException(404, "Article non généré")
     return PlainTextResponse(article_service.to_markdown(result.article), media_type="text/markdown; charset=utf-8",
@@ -159,8 +223,8 @@ async def article_markdown(analysis_id: str):
 
 
 @router.get("/{analysis_id}/article.html", response_class=HTMLResponse)
-async def article_html(analysis_id: str):
-    result = _result(analysis_id)
+async def article_html(analysis_id: str, user: dict[str, Any] = Depends(current_user)):
+    result = _result(_readable(analysis_id, user))
     if not result.article:
         raise HTTPException(404, "Article non généré")
     return HTMLResponse(article_service.to_html(result.article),

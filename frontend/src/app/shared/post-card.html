@@ -1,0 +1,103 @@
+@let p = post();
+<article class="card post" [class.hidden-post]="p.hidden">
+  <header class="head">
+    <a class="avatar" [class]="avatarTone(p.author_id)" [routerLink]="['/profil', p.author_id]" [attr.aria-label]="'Profil de ' + p.author_name">{{ initials(p.author_name) }}</a>
+    <div class="who">
+      <a class="name" [routerLink]="['/profil', p.author_id]">{{ p.author_name }}</a>
+      @if (p.author_role === 'admin') { <span class="badge neutral role">Admin</span> }
+      <span class="meta">
+        @if (p.author_organization) { {{ p.author_organization }} · }
+        <time [attr.datetime]="p.created_at">{{ relativeTime(p.created_at) }}</time>
+        @if (edited(p)) { · modifié }
+      </span>
+    </div>
+    @if (p.hidden) { <span class="badge bad">Masquée</span> }
+    @if (p.can_edit && !editing()) {
+      <button type="button" class="icon-btn sm" (click)="startEdit()" aria-label="Modifier la publication"><app-icon name="edit" [size]="17" /></button>
+    }
+    @if (p.can_edit || p.can_moderate) {
+      <button type="button" class="icon-btn sm" (click)="confirmDelete.set(true)" aria-label="Supprimer la publication"><app-icon name="trash" [size]="17" /></button>
+    }
+  </header>
+
+  @if (confirmDelete()) {
+    <div class="confirm" role="alertdialog" aria-label="Confirmer la suppression">
+      <span>Supprimer définitivement cette publication ?</span>
+      <button type="button" class="btn btn-sm btn-danger" (click)="remove()">Supprimer</button>
+      <button type="button" class="btn btn-sm" (click)="confirmDelete.set(false)">Annuler</button>
+    </div>
+  }
+
+  @if (editing()) {
+    <div class="edit">
+      <label class="visually-hidden" [for]="'edit-' + p.id">Modifier le message</label>
+      <textarea class="input" [id]="'edit-' + p.id" [(ngModel)]="draft" maxlength="5000" rows="4"></textarea>
+      <div class="row-end">
+        <button type="button" class="btn btn-sm" (click)="editing.set(false)">Annuler</button>
+        <button type="button" class="btn btn-sm btn-primary" (click)="saveEdit()" [disabled]="busy() || !draft.trim()">Enregistrer</button>
+      </div>
+    </div>
+  } @else if (p.body) {
+    <p class="body">{{ p.body }}</p>
+  }
+
+  @if (p.image_url) {
+    <img class="photo" [src]="p.image_url" alt="Image jointe à la publication" loading="lazy">
+  }
+
+  @if (p.analysis; as a) {
+    <a class="analysis" [routerLink]="['/resultat', a.id]">
+      <app-score-ring [score]="a.global_score" [size]="48" [compact]="true" />
+      <span class="a-t">
+        <span class="a-k">Analyse Hoe-aona? · {{ verdictLabel(a.verdict) }}</span>
+        <span class="a-n">{{ a.title }}</span>
+      </span>
+      <app-icon name="chevron" [size]="18" />
+    </a>
+  }
+
+  <footer class="actions">
+    <button type="button" class="act" [class.on]="p.liked" (click)="toggleLike()" [attr.aria-pressed]="p.liked"
+            [attr.aria-label]="(p.liked ? 'Retirer la mention ' : 'Mentionner ') + 'J’apprécie'">
+      <app-icon name="heart" [size]="18" /><span>{{ p.likes }}</span>
+    </button>
+    <button type="button" class="act" [class.on]="showComments()" (click)="toggleComments()" [attr.aria-expanded]="showComments()">
+      <app-icon name="comment" [size]="18" /><span>{{ p.comments_count }} commentaire{{ p.comments_count > 1 ? 's' : '' }}</span>
+    </button>
+    @if (moderation()) {
+      <button type="button" class="act push" (click)="toggleHidden()">
+        <app-icon [name]="p.hidden ? 'eye' : 'eye-off'" [size]="18" /><span>{{ p.hidden ? 'Rétablir' : 'Masquer' }}</span>
+      </button>
+    }
+  </footer>
+
+  @if (error()) { <p class="error-box" role="alert">{{ error() }}</p> }
+
+  @if (showComments()) {
+    <section class="comments" aria-label="Commentaires">
+      @if (comments() === null) {
+        <p class="muted">Chargement…</p>
+      } @else {
+        @for (c of comments(); track c.id) {
+          <div class="comment">
+            <a class="avatar xs" [class]="avatarTone(c.author_id)" [routerLink]="['/profil', c.author_id]">{{ initials(c.author_name) }}</a>
+            <div class="c-b">
+              <span class="c-h"><a [routerLink]="['/profil', c.author_id]">{{ c.author_name }}</a> <span class="muted">{{ relativeTime(c.created_at) }}</span></span>
+              <p>{{ c.body }}</p>
+            </div>
+            @if (c.can_delete) {
+              <button type="button" class="icon-btn xs" (click)="removeComment(c)" aria-label="Supprimer le commentaire"><app-icon name="close" [size]="14" /></button>
+            }
+          </div>
+        } @empty {
+          <p class="muted">Aucun commentaire pour l’instant.</p>
+        }
+      }
+      <form class="c-form" (ngSubmit)="sendComment()">
+        <label class="visually-hidden" [for]="'c-' + p.id">Votre commentaire</label>
+        <input class="input" [id]="'c-' + p.id" name="comment" [(ngModel)]="commentDraft" maxlength="2000" placeholder="Écrire un commentaire…" autocomplete="off">
+        <button type="submit" class="icon-btn send" [disabled]="busy() || !commentDraft.trim()" aria-label="Publier le commentaire"><app-icon name="send" [size]="18" /></button>
+      </form>
+    </section>
+  }
+</article>

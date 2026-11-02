@@ -91,7 +91,7 @@ async def indicator(indicator: str, country: str = "MDG", years: int = 6) -> dic
             "latest_year": latest["year"] if latest else None,
             "latest_value": latest["value"] if latest else None,
             "last_updated": meta.get("lastupdated"),
-            "source_url": f"https://data.worldbank.org/indicator/{indicator}",
+            "source_url": f"https://data.worldbank.org/indicator/{indicator}?locations={rows[0].get('country', {}).get('id', '')}",
         }]}
     except Exception as exc:  # noqa: BLE001
         return error_payload(exc, "Banque mondiale")

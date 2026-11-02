@@ -1,0 +1,16 @@
+.hero { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 16px; padding: 20px; margin-top: 8px; }
+.avatar.big { width: 72px; height: 72px; font-size: 24px; }
+.info { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
+.info h1 { font-size: 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.org { color: var(--ink2); font-size: 14px; }
+.bio { white-space: pre-line; font-size: 14px; margin-top: 4px; }
+.hero-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.grid-2 { display: grid; gap: 12px; margin-top: 12px; }
+@media (min-width: 720px) { .grid-2 { grid-template-columns: 1fr 1fr; } }
+.form { display: flex; flex-direction: column; gap: 12px; padding: 18px; }
+.form h2 { font-size: 16px; display: flex; align-items: center; gap: 6px; }
+.row-end { display: flex; justify-content: flex-end; gap: 8px; }
+.list { display: flex; flex-direction: column; gap: 12px; }
+.skeleton { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.skeleton span { height: 140px; border-radius: var(--radius-m); background: linear-gradient(90deg, var(--soft), var(--bg), var(--soft)); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }

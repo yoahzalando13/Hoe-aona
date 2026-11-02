@@ -19,8 +19,8 @@ from .textutils import truncate
 log = logging.getLogger("hoe-aona.pipeline")
 
 
-def load_preferences() -> Preferences:
-    return Preferences(**get_db().get_preferences())
+def load_preferences(user_id: str | None = None) -> Preferences:
+    return Preferences(**get_db().get_preferences(user_id))
 
 
 class Progress:
@@ -89,8 +89,8 @@ def _criteria(inputs: list[InputSummary], claims: list[Claim], origin_rel: list[
     refuted = sum(1 for c in claims if c.verdict in ("faux", "plutot_faux"))
     non_verifiable = sum(1 for c in claims if c.verdict == "non_verifiable")
     ver_summary = (f"{confirmed} affirmation(s) sur {len(claims)} confirmée(s), {refuted} contredite(s)"
-                   + (f", {non_verifiable} non Hoe-aona?ble(s)" if non_verifiable else "")) if claims else \
-        "Aucune affirmation Hoe-aona?ble identifiée"
+                   + (f", {non_verifiable} non vérifiable(s)" if non_verifiable else "")) if claims else \
+        "Aucune affirmation vérifiable identifiée"
     ver_details = [f"« {truncate(c.text, 90)} » : {c.verdict_label} ({c.truth_score}/10)" for c in claims]
 
     level = "faible" if ai_prob < 0.3 else "modérée" if ai_prob < 0.6 else "élevée"
@@ -109,7 +109,7 @@ async def run_analysis(analysis_id: str) -> None:
     if not record:
         return
     settings = get_settings()
-    prefs = load_preferences()
+    prefs = load_preferences(record.get("user_id"))
     progress = Progress(analysis_id)
     llm = LLMClient(settings)
     warnings: list[str] = []
@@ -159,7 +159,7 @@ async def run_analysis(analysis_id: str) -> None:
         full_text = "\n\n".join(ex.text for ex in extracted if ex.text)
         drafts, topic, summary = await extract_claims(full_text, llm, settings.max_claims, prefs.default_country, warnings)
         if not drafts:
-            warnings.append("Aucune affirmation Hoe-aona?ble n'a été trouvée dans le contenu")
+            warnings.append("Aucune affirmation vérifiable n'a été trouvée dans le contenu")
 
         progress(45, "Recherche de preuves (MCP)")
         collected = []
@@ -178,7 +178,7 @@ async def run_analysis(analysis_id: str) -> None:
                 if w not in warnings:
                     warnings.append(w)
 
-        progress(75, "Évaluation de la véracité")
+        progress(75, "Évaluation : preuves, contre-exemples, raisonnement par l'absurde")
         claims: list[Claim] = []
         for i, (draft, col) in enumerate(zip(drafts, collected), start=1):
             claims.append(await stance.evaluate(f"C{i}", draft, col, llm, prefs.report_language, warnings))

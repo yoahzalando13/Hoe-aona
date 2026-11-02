@@ -1,0 +1,47 @@
+<section class="auth">
+  <div class="panel">
+    <div class="brand">
+      <img src="logo-hoe-aona.svg" width="40" height="40" alt="" aria-hidden="true" style="object-fit: contain" />
+      <span>Hoe aona?</span>
+    </div>
+    <h1>{{ mode() === 'login' ? 'Connexion' : (config()?.has_users === false ? 'Créer le compte administrateur' : 'Créer un compte') }}</h1>
+    <p class="lead">
+      @if (config()?.has_users === false) {
+        Aucun compte n’existe encore. Le premier compte créé administre la plateforme.
+      } @else {
+        Espace réservé au personnel des médias : vérifiez, gérez vos analyses et partagez-les avec la communauté.
+      }
+    </p>
+
+    @if (config()?.has_users && config()?.allow_registration) {
+      <div class="tabs" role="tablist">
+        <button type="button" role="tab" [class.on]="mode() === 'login'" [attr.aria-selected]="mode() === 'login'" (click)="switchTo('login')">Se connecter</button>
+        <button type="button" role="tab" [class.on]="mode() === 'register'" [attr.aria-selected]="mode() === 'register'" (click)="switchTo('register')">Créer un compte</button>
+      </div>
+    }
+
+    <form (ngSubmit)="submit()" #f="ngForm">
+      @if (mode() === 'register') {
+        <label class="field"><span>Nom affiché</span>
+          <input class="input" name="name" [(ngModel)]="displayName" required minlength="2" maxlength="80" autocomplete="name"></label>
+        <label class="field"><span>Média ou rédaction</span>
+          <input class="input" name="org" [(ngModel)]="organization" maxlength="120" placeholder="ex. Radio Fahazavana" autocomplete="organization"></label>
+      }
+      <label class="field"><span>Adresse e-mail</span>
+        <input class="input" type="email" name="email" [(ngModel)]="email" required autocomplete="email"></label>
+      <label class="field"><span>Mot de passe @if (mode() === 'register') { <small>(8 caractères minimum)</small> }</span>
+        <input class="input" type="password" name="password" [(ngModel)]="password" required
+               [attr.minlength]="mode() === 'register' ? 8 : null"
+               [autocomplete]="mode() === 'login' ? 'current-password' : 'new-password'"></label>
+
+      @if (error()) { <p class="error-box" role="alert">{{ error() }}</p> }
+
+      <button type="submit" class="btn btn-primary" [disabled]="busy() || f.invalid">
+        {{ busy() ? 'Patientez…' : (mode() === 'login' ? 'Se connecter' : 'Créer le compte') }}
+      </button>
+    </form>
+    @if (config()?.has_users && !config()?.allow_registration) {
+      <p class="muted center">Les inscriptions sont fermées : un administrateur doit vous ouvrir un compte.</p>
+    }
+  </div>
+</section>

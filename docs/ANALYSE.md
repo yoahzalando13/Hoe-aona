@@ -4,7 +4,7 @@
 
 La désinformation circule surtout sous forme de contenus courts et partagés sans contexte : captures d'écran, messages vocaux, chiffres repris sans source, images retouchées ou entièrement générées par IA. À Madagascar comme ailleurs, ces contenus passent d'abord par les réseaux sociaux et les messageries, où l'origine se perd en quelques partages.
 
-Le problème n'est pas l'absence d'informations fiables. Les statistiques officielles, les vérifications des fact-checkers et les dépêches existent. Le problème est le coût de la vérification : pour un seul message, il faut identifier les affirmations Hoe-aona?bles, chercher dans plusieurs bases, juger la fiabilité de chaque source, comparer les chiffres à la donnée officielle la plus récente, puis rédiger une réponse claire. Ce travail prend une à deux heures à un journaliste entraîné.
+Le problème n'est pas l'absence d'informations fiables. Les statistiques officielles, les vérifications des fact-checkers et les dépêches existent. Le problème est le coût de la vérification : pour un seul message, il faut identifier les affirmations vérifiables, chercher dans plusieurs bases, juger la fiabilité de chaque source, comparer les chiffres à la donnée officielle la plus récente, puis rédiger une réponse claire. Ce travail prend une à deux heures à un journaliste entraîné.
 
 **Hoe-aona? répond à ce besoin : réduire le temps entre « je reçois un contenu douteux » et « je publie une vérification sourcée » à quelques minutes, sans sacrifier la traçabilité.** Chaque score est accompagné de ses preuves (liens, extraits, images, statistiques datées), et l'article proposé ne contient que ce que les preuves établissent.
 
@@ -23,8 +23,8 @@ Le problème n'est pas l'absence d'informations fiables. Les statistiques offici
 2. **Extraction** : OCR et description des images, transcription audio, lecture des documents et des pages web.
 3. **Détection de contenu IA** : signatures explicites (C2PA, IPTC `trainedAlgorithmicMedia`, paramètres Stable Diffusion/ComfyUI, logiciels générateurs dans l'EXIF ou les métadonnées PDF/DOCX, formules d'assistant, caractères invisibles), stylométrie, et détecteur externe optionnel pour les images.
 4. **Exclusion des sources générées par IA** : toute page de preuve dont la probabilité IA dépasse le seuil réglé est retirée du calcul et listée à part avec la raison.
-5. **Identification des affirmations Hoe-aona?bles** (chiffres, événements, citations, faits sanitaires).
-6. **Recherche de preuves via MCP** : fact-checks existants, encyclopédie, actualité mondiale, web, statistiques officielles.
+5. **Identification des affirmations vérifiables** (chiffres, événements, citations, faits sanitaires).
+6. **Recherche de preuves via MCP** : encyclopédie, actualité mondiale, web (Tavily), statistiques officielles.
 7. **Évaluation** : pour chaque preuve, position (confirme, contredit, contexte), confiance et justification. Pour chaque affirmation, arguments pour et contre, chacun relié à une preuve.
 8. **Scores sur 10** : source, véracité des données, part d'IA, et score global pondéré.
 9. **Preuves visibles** : lien, éditeur, date, extrait court, image de la source, statistiques avec année et date de mise à jour.
@@ -49,8 +49,7 @@ flowchart LR
   P --> X[Extraction : PDF, DOCX, OCR, Whisper]
   P --> D[Détection IA locale]
   P --> L[LLM gratuit : Gemini / Groq]
-  P -- client MCP stdio --> M[Serveur MCP Hoe aona?-tools]
-  M --> FC[Google Fact Check Tools]
+  P -- client MCP stdio --> M[Serveur MCP hoe-aona-tools]
   M --> W[Wikipedia]
   M --> G[GDELT DOC 2.0]
   M --> T[Tavily]
@@ -68,7 +67,7 @@ Le backend lance un **serveur MCP** (`app/mcp/server.py`, FastMCP) qui expose ch
 | -------------------- | ----------- | ------------------------------------------------------------------------------ |
 | Lecture des données  | 5 %         | Extraction du texte de chaque entrée, lecture des liens fournis                |
 | Signatures IA        | 20 %        | Analyse locale, puis détecteur externe si activé                               |
-| Affirmations         | 30 %        | Le LLM isole jusqu'à 5 affirmations Hoe-aona?bles ; repli heuristique sans LLM |
+| Affirmations         | 30 %        | Le LLM isole jusqu'à 5 affirmations vérifiables ; repli heuristique sans LLM |
 | Recherche de preuves | 45 %        | Appels MCP en parallèle, lecture des pages, exclusion des pages IA             |
 | Évaluation           | 75 %        | Position de chaque preuve, arguments pour et contre, comparaison chiffrée      |
 | Scores               | 88 %        | Calcul décrit ci-dessous                                                       |
@@ -78,13 +77,13 @@ Le backend lance un **serveur MCP** (`app/mcp/server.py`, FastMCP) qui expose ch
 
 **Fiabilité d'une source (0 à 1).** Base selon le type de domaine : institutions et statistiques officielles (0,90 à 0,96), fact-checkers reconnus (0,85 à 0,93), agences et grands médias (0,80 à 0,92), encyclopédie (0,75), médias locaux (0,60 à 0,70), domaine inconnu (0,50), réseaux sociaux et plateformes de blog (0,20 à 0,45). Ajustements : auteur identifié, date de publication, HTTPS, signatures IA.
 
-**Vérité d'une affirmation (0 à 10).** Avec S la somme des `fiabilité × confiance` des preuves qui confirment et R celle des preuves qui contredisent (poids ×1,5 pour un fact-check publié) :
+**Vérité d'une affirmation (0 à 10).** Avec S la somme des `fiabilité × confiance` des preuves qui confirment et R celle des preuves qui contredisent :
 
 ```
 score = 10 × (S + 0,3) / (S + R + 0,6)
 ```
 
-Sans preuve, le score reste à 5 et le verdict est « non Hoe-aona?ble ». Les verdicts : vrai (≥ 8), plutôt vrai (≥ 6), mitigé (entre 4 et 6), plutôt faux (≥ 2), faux (< 2).
+Sans preuve, le score reste à 5 et le verdict est « non vérifiable ». Les verdicts : vrai (≥ 8), plutôt vrai (≥ 6), mitigé (entre 4 et 6), plutôt faux (≥ 2), faux (< 2).
 
 **Critères affichés.**
 
@@ -103,7 +102,6 @@ Verdict global : fiable (≥ 8), plutôt fiable (≥ 6,5), à vérifier (≥ 4,5
 
 | Service                      | Rôle                                             | Clé           | Offre gratuite constatée (oct. 2026) |
 | ---------------------------- | ------------------------------------------------ | ------------- | ------------------------------------ |
-| Google Fact Check Tools      | Fact-checks existants (texte et image)           | Oui, gratuite | Quota Google Cloud standard          |
 | Wikipedia (MediaWiki + REST) | Contexte encyclopédique, images                  | Non           | Usage raisonnable avec User-Agent    |
 | GDELT DOC 2.0                | Actualité mondiale, 65 langues, 3 derniers mois  | Non           | Libre, citation de GDELT demandée    |
 | Tavily                       | Recherche web pour agents                        | Oui           | 1 000 crédits par mois               |
@@ -119,7 +117,7 @@ Les quotas changent régulièrement ; ils sont à revérifier avant la mise en p
 
 - **Détection IA probabiliste** : aucun détecteur n'est une preuve. Seules les signatures explicites (C2PA, IPTC, paramètres de génération) sont quasi certaines ; la stylométrie sert d'indice et est plafonnée à 0,8.
 - **Hallucinations du LLM** : le LLM ne juge qu'à partir des extraits fournis, chaque argument cite une preuve, et l'article ne reçoit que les preuves retenues. Les identifiants de preuve inventés sont ignorés.
-- **Couverture locale** : les fact-checks et GDELT couvrent mal certaines actualités malgaches ; la liste de domaines locaux est à enrichir avec des rédactions partenaires.
+- **Couverture locale** : GDELT et Tavily couvrent mal certaines actualités malgaches ; la liste de domaines locaux est à enrichir avec des rédactions partenaires.
 - **Statistiques** : la Banque mondiale publie avec un ou deux ans de décalage. L'interface affiche toujours l'année de la donnée et la date de mise à jour de la base.
 - **Droit d'auteur** : extraits limités à environ 400 caractères avec attribution ; l'article reformule et ne recopie pas les sources.
 - **Données personnelles** : l'offre gratuite de Gemini peut servir à l'entraînement de Google hors UE ; pour des contenus sensibles, privilégier Groq ou une offre payante.

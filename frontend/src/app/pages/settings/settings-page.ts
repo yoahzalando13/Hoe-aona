@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin } from 'rxjs';
+import { RouterLink } from '@angular/router';
 import { Api, errorMessage } from '../../core/api';
+import { Auth } from '../../core/auth';
 import { Health, Preferences } from '../../core/models';
 import { Icon } from '../../shared/icon';
 
@@ -18,13 +20,14 @@ const COUNTRIES = [
 
 @Component({
   selector: 'app-settings-page',
-  imports: [FormsModule, Icon],
+  imports: [FormsModule, RouterLink, Icon],
   templateUrl: './settings-page.html',
   styleUrl: './settings-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class SettingsPage {
   private readonly api = inject(Api);
+  protected readonly auth = inject(Auth);
 
   protected readonly countries = COUNTRIES;
   protected readonly weights: { key: WeightKey; label: string; icon: string; tone: string }[] = [

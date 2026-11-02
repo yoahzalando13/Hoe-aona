@@ -4,7 +4,7 @@
       "enabled": true,
       "command": "python",
       "args": ["-m", "app.mcp.server"],
-      "description": "Serveur MCP interne : fact-checks, Wikipedia, GDELT, Tavily, Banque mondiale, lecture de pages, détection IA d'images"
+      "description": "Serveur MCP interne : Wikipedia, GDELT, Tavily, Banque mondiale, lecture de pages, détection IA d'images"
     },
     "tavily-officiel": {
       "enabled": false,

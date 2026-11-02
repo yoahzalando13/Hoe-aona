@@ -1,22 +1,11 @@
-<div class="shell">
+<div class="shell" [class.guest]="!auth.user()">
+  @if (auth.user(); as me) {
   <nav class="nav" aria-label="Navigation principale">
-    <a class="brand" routerLink="/analyser" aria-label="Hoe-aona?, accueil">
-      <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
-        <defs>
-          <linearGradient id="brand-g" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stop-color="#4B4DED" />
-            <stop offset=".55" stop-color="#8B5CF6" />
-            <stop offset="1" stop-color="#0EA5A4" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M12 2c.6 4.8 3.2 7.4 10 10-6.8 2.6-9.4 5.2-10 10-.6-4.8-3.2-7.4-10-10 6.8-2.6 9.4-5.2 10-10z"
-          fill="url(#brand-g)"
-        />
-      </svg>
+    <a class="brand" routerLink="/fil" aria-label="Hoe-aona?, accueil">
+      <img src="logo-hoe-aona.svg" width="28" height="28" alt="" aria-hidden="true" style="object-fit: contain" />
       <span>Hoe-aona?</span>
     </a>
-    @for (item of nav; track item.path) {
+    @for (item of nav(); track item.path) {
     <a
       class="nav-item"
       [routerLink]="item.path"
@@ -28,7 +17,20 @@
       <span class="label">{{ item.label }}</span>
     </a>
     }
+    <div class="me">
+      <a class="me-link" [routerLink]="['/profil', me.id]" routerLinkActive="on">
+        <span class="avatar" [class]="avatarTone(me.id)">{{ initials(me.display_name) }}</span>
+        <span class="me-t">
+          <span class="me-n">{{ me.display_name }}</span>
+          <span class="me-o">{{ me.organization || (me.role === 'admin' ? 'Administration' : 'Personnel média') }}</span>
+        </span>
+      </a>
+      <button type="button" class="icon-btn" (click)="auth.logout()" aria-label="Se déconnecter" title="Se déconnecter">
+        <app-icon name="logout" [size]="19" />
+      </button>
+    </div>
   </nav>
+  }
   <main class="content">
     <router-outlet />
   </main>

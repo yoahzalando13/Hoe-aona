@@ -51,6 +51,7 @@ export class AnalyzePage {
   protected readonly submitting = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly dragging = signal(false);
+  protected readonly menuOpen = signal(false);
   protected readonly recording = signal(false);
   protected readonly recordSeconds = signal(0);
 
@@ -76,6 +77,11 @@ export class AnalyzePage {
     this.pickerAccept.set(ACCEPT[kind]);
     // laisse Angular appliquer l'attribut accept avant d'ouvrir la fenêtre
     queueMicrotask(() => this.picker().nativeElement.click());
+  }
+
+  protected pick(kind: FileKind): void {
+    this.menuOpen.set(false);
+    this.openPicker(kind);
   }
 
   protected focusText(): void {

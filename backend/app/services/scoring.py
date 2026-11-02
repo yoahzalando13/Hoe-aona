@@ -11,7 +11,7 @@ CLAIM_LABELS = {
     "vrai": "Vrai",
     "plutot_vrai": "Plutôt vrai",
     "mitige": "Mitigé",
-    "non_verifiable": "Non Hoe-aona?ble",
+    "non_verifiable": "Non vérifiable",
     "plutot_faux": "Plutôt faux",
     "faux": "Faux",
 }
@@ -23,41 +23,10 @@ GLOBAL_LABELS = {
 }
 
 PRIOR = 0.6            # pseudo-compte : sans preuve, le score reste à 5/10
-FACTCHECK_BOOST = 1.5  # un fact-check publié pèse plus qu'un article ordinaire
 MIN_EVIDENCE_WEIGHT = 0.35
 
-_MOSTLY_FALSE = ["mostly false", "plutôt faux", "plutot faux", "largement faux", "en grande partie faux"]
-_MOSTLY_TRUE = ["mostly true", "plutôt vrai", "plutot vrai", "largement vrai", "en grande partie vrai"]
-_MISLEADING = ["trompeur", "misleading", "partly", "partiellement", "en partie", "manque de contexte",
-               "missing context", "exagér", "exaggerat", "mixed", "mitigé", "half true", "demi-vrai",
-               "hors contexte", "out of context", "sorti de son contexte", "imprécis", "needs context"]
-_FALSE = ["faux", "false", "fausse", "pants on fire", "incorrect", "inexact", "fake", "infondé", "mensong",
-          "wrong", "not true", "fabricated", "inventé", "canular", "hoax", "satire", "montage", "altered",
-          "retouché", "scam", "arnaque"]
-_TRUE = ["vrai", "true", "correct", "exact", "accurate", "confirmé", "confirmed", "authentique", "authentic"]
-
-
-def rating_to_stance(rating: str | None) -> tuple[str, float]:
-    """Convertit le verdict textuel d'un fact-checker en (position, confiance)."""
-    if not rating:
-        return "context", 0.0
-    r = rating.lower().strip()
-    if any(k in r for k in _MOSTLY_FALSE):
-        return "refutes", 0.75
-    if any(k in r for k in _MOSTLY_TRUE):
-        return "supports", 0.75
-    if any(k in r for k in _MISLEADING):
-        return "refutes", 0.5
-    if any(k in r for k in _FALSE):
-        return "refutes", 0.95
-    if any(k in r for k in _TRUE):
-        return "supports", 0.9
-    return "context", 0.2
-
-
 def _weight(e: Evidence) -> float:
-    w = e.reliability * e.confidence
-    return w * FACTCHECK_BOOST if e.origin == "factcheck" else w
+    return e.reliability * e.confidence
 
 
 def claim_truth(evidence: Sequence[Evidence], statistics: Sequence[Statistic] = ()) -> tuple[float, float]:

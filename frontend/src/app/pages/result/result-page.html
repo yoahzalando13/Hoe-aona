@@ -13,6 +13,14 @@
     >
       <app-icon name="document" />
     </button>
+    @if (analysis()?.editable) {
+    <a
+      class="btn btn-sm btn-primary publish"
+      [routerLink]="['/fil']"
+      [queryParams]="{ analyse: analysis()!.id }"
+      ><app-icon name="feed" [size]="16" />Publier sur le fil</a
+    >
+    }
     <button
       type="button"
       class="icon-btn"
@@ -77,7 +85,12 @@
     </p>
   </div>
 
-  } @else { @if (result(); as r) {
+  } @else { @if (!a.editable && a.owner_name) {
+  <p class="card readonly">
+    <app-icon name="eye" [size]="18" /> Analyse partagée par
+    <a [routerLink]="['/profil', a.owner_id]">{{ a.owner_name }}</a> : lecture seule.
+  </p>
+  } @if (result(); as r) {
   <div class="layout">
     <!-- Colonne de synthèse -->
     <aside class="summary-col">
@@ -172,8 +185,58 @@
           />
         </header>
         <p class="claim-text">« {{ claim.text }} »</p>
-        @if (claim.conclusion) {
+        @if (claim.universal) {
+        <p class="universal muted"><app-icon name="alert" [size]="13" /> Affirmation absolue : un seul contre-exemple fiable suffit à la réfuter.</p>
+        } @if (claim.conclusion) {
         <p class="conclusion">{{ claim.conclusion }}</p>
+        } @if (shownTests(claim).length) {
+        <section class="reasoning" aria-label="Tests de raisonnement">
+          <h4 class="ev-title">Tests de raisonnement
+            @if (claim.reasoning_adjustment && claim.score_before_reasoning !== null) {
+            <span class="muted adj">score {{ formatScore(claim.score_before_reasoning) }} → {{ formatScore(claim.truth_score) }}
+              ({{ signed(claim.reasoning_adjustment) }})</span>
+            }
+          </h4>
+          @for (t of shownTests(claim); track t.kind) {
+          <div class="test" [class]="'o-' + t.outcome">
+            <div class="test-head">
+              <span class="chip-icon tone-grey sm"><app-icon [name]="reasoningIcon[t.kind]" [size]="15" /></span>
+              <strong>{{ t.label }}</strong>
+              @if (t.kind !== 'sophisme') {
+              <span class="badge" [class]="outcomeTone(t.outcome)">{{ outcomeLabel[t.outcome] }}</span>
+              }
+            </div>
+            @if (t.hypothesis) { <p class="hyp">{{ t.hypothesis }}</p> }
+            @if (t.steps.length) {
+            <ol class="steps-r">
+              @for (s of t.steps; track $index) {
+              <li>
+                <span class="s-text">{{ s.text }}</span>
+                @if (t.kind !== 'sophisme') {
+                <span class="badge" [class]="outcomeTone(s.outcome)">{{ stepLabel[s.outcome] }}</span>
+                }
+                @for (ref of s.refs; track ref) {
+                <button type="button" class="ref" (click)="scrollTo(anchor(claim, ref))">{{ ref }}</button>
+                }
+                @if (s.explanation) { <span class="s-exp">{{ s.explanation }}</span> }
+              </li>
+              }
+            </ol>
+            }
+            @if (t.summary) {
+            <p class="t-sum">
+              @for (seg of segments(t.summary); track $index) {@if (seg.ref) {<button type="button" class="ref"
+                (click)="scrollTo(anchor(claim, seg.ref))">{{ seg.ref }}</button>} @else {<span>{{ seg.text }}</span>}}
+              @if (!t.steps.length) {
+              @for (ref of t.refs; track ref) {
+              <button type="button" class="ref" (click)="scrollTo(anchor(claim, ref))">{{ ref }}</button>
+              } }
+            </p>
+            }
+            @if (t.effect) { <p class="t-eff muted">Effet sur le score : {{ t.effect }}</p> }
+          </div>
+          }
+        </section>
         } @if (claim.arguments_for.length || claim.arguments_against.length) {
         <div class="args">
           @if (claim.arguments_for.length) {
@@ -231,7 +294,7 @@
           <div class="stat-body">
             <div class="stat-value">
               {{ formatNumber(s.latest_value) }}<small
-                >donnée {{ s.latest_year }}</small
+                >{{ isEstimate(s, s.latest_year) ? 'estimation' : 'donnée' }} {{ s.latest_year }}</small
               >
             </div>
             @if (sparkline(s)) {
@@ -246,7 +309,28 @@
             </svg>
             }
           </div>
-          @if (s.claimed_value) {
+          @if (s.series.length > 1) {
+          <table class="series">
+            <caption class="visually-hidden">Série {{ s.indicator_name }}</caption>
+            <tr>
+              @for (pt of s.series.slice(-6); track pt.year) {
+              <th scope="col" [class.est]="isEstimate(s, pt.year)">{{ pt.year }}@if (isEstimate(s, pt.year)) {*}</th>
+              }
+            </tr>
+            <tr>
+              @for (pt of s.series.slice(-6); track pt.year) {
+              <td>{{ formatNumber(pt.value) }}</td>
+              }
+            </tr>
+          </table>
+          @if (s.estimate_from_year) {
+          <p class="muted">* estimation ou prévision du FMI, révisée à chaque édition du World Economic Outlook.</p>
+          } } @if (statAge(s) >= 2) {
+          <p class="stat-line warn-line">
+            <app-icon name="alert" [size]="14" /> Dernière donnée publiée : {{ s.latest_year }}. Vérifiez auprès
+            de l’INSTAT si un chiffre plus récent existe.
+          </p>
+          } @if (s.claimed_value) {
           <p class="stat-line">
             Valeur annoncée dans le contenu :
             <strong>{{ s.claimed_value }}</strong>
@@ -256,7 +340,7 @@
           }
           <p class="stat-source">
             <a [href]="s.source_url" target="_blank" rel="noopener"
-              >{{ s.source_name }}</a
+              >{{ s.source_name }} <app-icon name="external" [size]="12" /></a
             >
             @if (s.last_updated) {
             <span class="muted"
@@ -284,13 +368,23 @@
               <div class="ev-top">
                 <span class="ref static">{{ e.id }}</span>
                 <span class="pub">{{ e.publisher }}</span>
+                @if (e.official) {
+                <span class="badge good tag-off"><app-icon name="shield" [size]="13" />Source officielle</span>
+                } @else if (e.origin === 'community') {
+                <span class="badge neutral tag-off"><app-icon name="feed" [size]="13" />Fil média</span>
+                }
                 <span class="badge" [class]="stanceTone(e.stance)"
                   >{{ stanceLabel[e.stance] }}</span
                 >
               </div>
+              @if (e.origin === 'community') {
+              <a class="ev-link" [routerLink]="e.url">{{ e.title }} <app-icon name="chevron" [size]="13" /></a>
+              } @else {
               <a class="ev-link" [href]="e.url" target="_blank" rel="noopener"
                 >{{ e.title }} <app-icon name="external" [size]="13"
               /></a>
+              <span class="ev-url">{{ e.domain }}</span>
+              }
               @if (e.excerpt) {
               <blockquote>{{ e.excerpt }}</blockquote>
               } @if (e.justification) {
@@ -298,10 +392,9 @@
               }
               <p class="ev-meta">
                 <span>{{ e.category }}</span>
-                <span>Fiabilité {{ pct(e.reliability) }}</span>
-                @if (e.published_at) {
-                <span>{{ e.published_at.slice(0, 10) }}</span> } @if (e.rating)
-                { <span>Verdict publié : {{ e.rating }}</span> }
+                <span [title]="e.reliability_reasons.join(' · ')">Fiabilité {{ pct(e.reliability) }}</span>
+                <span>{{ e.published_at ? 'Publié le ' + (e.published_at.slice(0, 10) | date: 'd MMM y') : 'Date de publication inconnue' }}</span>
+                @if (e.found_via) { <span>Trouvé via {{ e.found_via }}</span> }
               </p>
             </div>
           </li>
@@ -310,13 +403,39 @@
         } @else {
         <p class="muted no-ev">
           Aucune preuve exploitable n’a été trouvée pour cette affirmation :
-          elle reste non Hoe-aona?ble.
+          elle reste non vérifiable.
         </p>
+        } @if (claim.contacts.length) {
+        <div class="contacts">
+          <h4 class="ev-title"><app-icon name="users" [size]="16" />Qui contacter pour confirmer</h4>
+          <ul>
+            @for (c of claim.contacts; track c.id) {
+            <li class="contact">
+              <div class="c-head">
+                <strong>{{ c.acronym ? c.acronym + ' · ' : '' }}{{ c.name }}</strong>
+                <span class="muted">{{ c.reason }}</span>
+              </div>
+              <div class="c-links">
+                @if (c.website) {
+                <a [href]="c.website" target="_blank" rel="noopener"><app-icon name="globe" [size]="14" />Site officiel</a>
+                } @for (t of tel(c.phone); track t.href) {
+                <a [href]="t.href"><app-icon name="audio" [size]="14" />{{ t.label }}</a>
+                } @if (c.email) {
+                <a [href]="'mailto:' + c.email"><app-icon name="send" [size]="14" />{{ c.email }}</a>
+                }
+              </div>
+              @if (c.address) { <span class="muted">{{ c.address }}</span> }
+              @if (c.verified_at) { <span class="muted">Coordonnées vérifiées le {{ c.verified_at | date: 'd MMM y' }}</span> }
+            </li>
+            }
+          </ul>
+          <a class="muted" routerLink="/sources">Voir l’annuaire des sources officielles</a>
+        </div>
         }
       </article>
       } @empty {
       <p class="card muted">
-        Aucune affirmation Hoe-aona?ble n’a été identifiée dans ce contenu.
+        Aucune affirmation vérifiable n’a été identifiée dans ce contenu.
       </p>
       } @if (r.excluded_sources.length) {
       <details class="card fold">
@@ -370,6 +489,7 @@
           <a class="btn btn-sm" [href]="downloadUrl('html')" download
             ><app-icon name="download" [size]="16" />HTML</a
           >
+          @if (analysis()?.editable) {
           <button
             type="button"
             class="btn btn-outline btn-sm"
@@ -379,6 +499,7 @@
             <app-icon name="refresh" [size]="16" />{{ regenerating() ?
             'Rédaction…' : 'Rédiger à nouveau' }}
           </button>
+          }
         </div>
       </section>
       } @if (r.warnings.length || toolsLabel().length) {

@@ -18,10 +18,15 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:4200"]
     max_upload_mb: int = 20
 
+    # Comptes : le premier inscrit devient administrateur.
+    allow_registration: bool = True
+    session_days: int = 30
+    cookie_secure: bool = False  # à passer à true derrière HTTPS
+
     # LLM compatibles OpenAI
     llm_priority: str = "gemini,groq"
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = "gemini-3.5-flash"
     gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
     groq_api_key: str | None = None
     groq_model: str = "openai/gpt-oss-120b"
@@ -30,8 +35,8 @@ class Settings(BaseSettings):
     groq_base_url: str = "https://api.groq.com/openai/v1"
 
     # Sources de preuves et détecteurs
-    google_factcheck_api_key: str | None = None
     tavily_api_key: str | None = None
+    newsdata_api_key: str | None = None
     sightengine_api_user: str | None = None
     sightengine_api_secret: str | None = None
     ocr_space_api_key: str | None = None
@@ -45,7 +50,7 @@ class Settings(BaseSettings):
     max_claims: int = 5
     max_evidence_per_claim: int = 8
     max_pages_fetched_per_claim: int = 6
-    user_agent: str = "Hoe aona?Bot/1.0 (outil de verification des faits; contact: admin@example.org)"
+    user_agent: str = "HoeAonaBot/1.0 (outil de verification des faits; contact: admin@example.org)"
 
 
 @lru_cache
@@ -53,4 +58,5 @@ def get_settings() -> Settings:
     settings = Settings()
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     (settings.data_dir / "uploads").mkdir(parents=True, exist_ok=True)
+    (settings.data_dir / "posts").mkdir(parents=True, exist_ok=True)
     return settings

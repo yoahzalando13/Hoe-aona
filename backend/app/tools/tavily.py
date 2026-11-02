@@ -5,8 +5,9 @@ from ..config import get_settings
 from .http import client, error_payload, skipped
 
 
-async def search(query: str, max_results: int = 6, days: int | None = None) -> dict:
-    """Recherche web générale ; renvoie titre, URL, extrait et date quand elle est connue."""
+async def search(query: str, max_results: int = 6, days: int | None = None,
+                 include_domains: list[str] | None = None, country: str | None = None) -> dict:
+    """Recherche web ; option : limiter à une liste de domaines (sources officielles, presse nationale)."""
     key = get_settings().tavily_api_key
     if not key:
         return skipped("Tavily", "clé TAVILY_API_KEY absente")
@@ -15,6 +16,10 @@ async def search(query: str, max_results: int = 6, days: int | None = None) -> d
     if days:
         body["topic"] = "news"
         body["days"] = days
+    if include_domains:
+        body["include_domains"] = include_domains[:60]
+    if country and not days:
+        body["country"] = country  # priorise les résultats du pays (nom anglais, ex. "madagascar")
     try:
         async with client() as http:
             resp = await http.post("https://api.tavily.com/search", json=body,

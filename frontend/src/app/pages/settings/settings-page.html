@@ -1,6 +1,22 @@
 <section class="page settings">
   <header class="appbar"><h1 class="page-title">Paramètres</h1></header>
 
+  @if (auth.user(); as me) {
+    <h2 class="section-label">Compte</h2>
+    <div class="list">
+      <a class="opt account" [routerLink]="['/profil', me.id]">
+        <span class="ico tone-blue"><app-icon name="user" [size]="18" /></span>
+        <span class="lb">{{ me.display_name }}<small>{{ me.email }} · {{ me.role === 'admin' ? 'Administrateur' : 'Personnel média' }}</small></span>
+        <app-icon name="chevron" [size]="18" />
+      </a>
+      <div class="opt">
+        <span class="ico tone-grey"><app-icon name="logout" [size]="18" /></span>
+        <span class="lb">Session<small>Vos préférences ci-dessous ne s’appliquent qu’à votre compte</small></span>
+        <button type="button" class="btn btn-sm btn-outline" (click)="auth.logout()">Se déconnecter</button>
+      </div>
+    </div>
+  }
+
   @if (error()) { <p class="error-box" role="alert">{{ error() }}</p> }
 
   @if (loading()) {
@@ -42,7 +58,7 @@
       </div>
       <div class="opt slider-opt">
         <span class="ico tone-blue"><app-icon name="shield" [size]="18" /></span>
-        <label class="lb" for="min-rel">Fiabilité minimale d’une preuve<small>Les fact-checks publiés sont toujours conservés</small></label>
+        <label class="lb" for="min-rel">Fiabilité minimale d’une preuve<small>Les sources moins fiables sont exclues du calcul</small></label>
         <span class="vl strong">{{ (p.min_source_reliability * 100).toFixed(0) }} %</span>
         <input id="min-rel" type="range" min="0" max="0.8" step="0.05" [ngModel]="p.min_source_reliability"
                (ngModelChange)="update('min_source_reliability', +$event)">

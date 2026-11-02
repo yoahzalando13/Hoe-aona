@@ -96,11 +96,30 @@ KNOWN: dict[str, tuple[float, str]] = {
     "wordpress.com": (0.35, "plateforme de blog"),
 }
 
+def _madagascar_entries() -> None:
+    """Sources officielles et presse malgaches de l'annuaire initial."""
+    from .madagascar import MG_MEDIA_DOMAINS, official_domains
+    for domain in official_domains():
+        KNOWN.setdefault(domain, (0.9, "source officielle"))
+    for domain in MG_MEDIA_DOMAINS:
+        KNOWN.setdefault(domain, (0.68, "média national"))
+
+
+_madagascar_entries()
+
+OFFICIAL_CATEGORIES = {"statistiques officielles", "institution internationale", "institution nationale",
+                       "site gouvernemental", "organisation internationale", "source officielle", "statistiques"}
+
+
+def is_official(category: str) -> bool:
+    return category in OFFICIAL_CATEGORIES
+
+
 SUFFIXES: list[tuple[str, float, str]] = [
     (".gouv.fr", 0.90, "site gouvernemental"),
     (".gov", 0.88, "site gouvernemental"),
-    (".gov.mg", 0.78, "site gouvernemental"),
-    (".gouv.mg", 0.78, "site gouvernemental"),
+    (".gov.mg", 0.85, "site gouvernemental"),
+    (".gouv.mg", 0.85, "site gouvernemental"),
     (".int", 0.90, "organisation internationale"),
     (".edu", 0.82, "université"),
     (".ac.uk", 0.82, "université"),

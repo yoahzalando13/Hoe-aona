@@ -1,9 +1,11 @@
 // Miroir des schémas Pydantic du backend (app/schemas.py)
 export type Stance = 'supports' | 'refutes' | 'context';
-export type ClaimVerdict = 'vrai' | 'plutot_vrai' | 'mitige' | 'non_Hoe aona?ble' | 'plutot_faux' | 'faux';
+export type ClaimVerdict = 'vrai' | 'plutot_vrai' | 'mitige' | 'non_verifiable' | 'plutot_faux' | 'faux';
 export type GlobalVerdict = 'fiable' | 'plutot_fiable' | 'a_verifier' | 'douteux';
 export type Status = 'pending' | 'running' | 'done' | 'error';
 export type InputKind = 'text' | 'image' | 'document' | 'audio' | 'url';
+export type Workflow = 'a_traiter' | 'en_revue' | 'valide' | 'publie' | 'archive';
+export type Role = 'media' | 'admin';
 
 export interface Preferences {
   weight_source: number;
@@ -36,8 +38,10 @@ export interface Evidence {
   title: string;
   publisher: string;
   domain: string;
-  origin: 'factcheck' | 'wikipedia' | 'news' | 'web' | 'user_source';
+  origin: 'wikipedia' | 'news' | 'web' | 'official' | 'community' | 'user_source';
   category: string;
+  official: boolean;
+  found_via: string;
   published_at: string | null;
   excerpt: string;
   image_url: string | null;
@@ -47,7 +51,6 @@ export interface Evidence {
   stance: Stance;
   confidence: number;
   justification: string;
-  rating: string | null;
   ai_probability: number;
 }
 
@@ -65,6 +68,7 @@ export interface Statistic {
   source_name: string;
   source_url: string;
   last_updated: string | null;
+  estimate_from_year: number | null;
   stance: Stance;
   comment: string;
 }
@@ -82,6 +86,45 @@ export interface Claim {
   arguments_against: string[];
   evidence: Evidence[];
   statistics: Statistic[];
+  contacts: OfficialContact[];
+  reasoning: ReasoningTest[];
+  universal: boolean;
+  score_before_reasoning: number | null;
+  reasoning_adjustment: number;
+}
+
+export type ReasoningKind = 'contre_exemple' | 'absurde' | 'ordre_de_grandeur' | 'coherence' | 'sophisme';
+export type ReasoningOutcome = 'refute' | 'affaiblit' | 'compatible' | 'non_concluant';
+
+export interface ReasoningStep {
+  text: string;
+  outcome: 'contredite' | 'compatible' | 'non_testable';
+  explanation: string;
+  refs: string[];
+}
+
+export interface ReasoningTest {
+  kind: ReasoningKind;
+  label: string;
+  outcome: ReasoningOutcome;
+  summary: string;
+  hypothesis: string;
+  steps: ReasoningStep[];
+  refs: string[];
+  effect: string;
+}
+
+export interface OfficialContact {
+  id: string;
+  name: string;
+  acronym: string;
+  category: string;
+  website: string;
+  email: string;
+  phone: string;
+  address: string;
+  verified_at: string | null;
+  reason: string;
 }
 
 export interface Criterion {
@@ -134,6 +177,12 @@ export interface AnalysisOut {
   verdict: GlobalVerdict | null;
   result: AnalysisResult | null;
   error: string | null;
+  notes: string;
+  tags: string[];
+  workflow: Workflow;
+  owner_id: string | null;
+  owner_name: string | null;
+  editable: boolean;
 }
 
 export interface AnalysisListItem {
@@ -144,6 +193,21 @@ export interface AnalysisListItem {
   input_kind: string;
   global_score: number | null;
   verdict: GlobalVerdict | null;
+  updated_at?: string | null;
+  notes: string;
+  tags: string[];
+  workflow: Workflow;
+}
+
+export interface AnalysisUpdate { title?: string; notes?: string; tags?: string[]; workflow?: Workflow; }
+
+export interface AnalysisStats {
+  total: number;
+  average_score: number | null;
+  by_verdict: Record<string, number>;
+  by_workflow: Record<string, number>;
+  by_status: Record<string, number>;
+  tags: { tag: string; count: number }[];
 }
 
 export interface AnalysisPage { items: AnalysisListItem[]; total: number; }
@@ -164,3 +228,97 @@ export interface Health {
   mcp_errors: string[];
   providers: ProviderStatus[];
 }
+
+// ---------- comptes ----------
+export interface User {
+  id: string;
+  created_at: string;
+  email: string;
+  display_name: string;
+  organization: string;
+  bio: string;
+  role: Role;
+  active: boolean;
+}
+
+export interface AdminUser extends User { analyses_count: number; posts_count: number; }
+
+export interface PublicUser {
+  id: string;
+  created_at: string;
+  display_name: string;
+  organization: string;
+  bio: string;
+  role: Role;
+  posts_count: number;
+}
+
+export interface AuthConfig { allow_registration: boolean; has_users: boolean; }
+
+// ---------- réseau social ----------
+export interface PostAnalysis {
+  id: string;
+  title: string;
+  global_score: number | null;
+  verdict: GlobalVerdict | null;
+  input_kind: string;
+}
+
+export interface Post {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  body: string;
+  author_id: string;
+  author_name: string;
+  author_organization: string;
+  author_role: Role;
+  image_url: string | null;
+  analysis: PostAnalysis | null;
+  likes: number;
+  liked: boolean;
+  comments_count: number;
+  hidden: boolean;
+  can_edit: boolean;
+  can_moderate: boolean;
+}
+
+export interface PostPage { items: Post[]; total: number; }
+
+export interface Comment {
+  id: string;
+  created_at: string;
+  body: string;
+  author_id: string;
+  author_name: string;
+  author_organization: string;
+  can_delete: boolean;
+}
+
+export interface PlatformStats {
+  users: number;
+  active_users: number;
+  admins: number;
+  analyses: number;
+  posts: number;
+  hidden_posts: number;
+  comments: number;
+  likes: number;
+}
+
+// ---------- annuaire des sources officielles ----------
+export interface OfficialSourceIn {
+  name: string;
+  acronym: string;
+  category: string;
+  website: string;
+  email: string;
+  phone: string;
+  address: string;
+  notes: string;
+  topics: string[];
+  verified_at: string | null;
+  active: boolean;
+}
+
+export interface OfficialSource extends OfficialSourceIn { id: string; created_at: string; updated_at: string; }

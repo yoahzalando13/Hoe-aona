@@ -62,8 +62,10 @@ class Evidence(BaseModel):
     title: str
     publisher: str
     domain: str
-    origin: Literal["factcheck", "wikipedia", "news", "web", "user_source"]
+    origin: Literal["wikipedia", "news", "web", "official", "community", "user_source"]
     category: str
+    official: bool = False
+    found_via: str = ""
     published_at: str | None = None
     excerpt: str = ""
     image_url: str | None = None
@@ -73,7 +75,6 @@ class Evidence(BaseModel):
     stance: Stance = "context"
     confidence: float = 0.0
     justification: str = ""
-    rating: str | None = None
     ai_probability: float = 0.0
 
 
@@ -96,8 +97,44 @@ class Statistic(BaseModel):
     source_name: str = "Banque mondiale, World Development Indicators"
     source_url: str
     last_updated: str | None = None
+    estimate_from_year: int | None = None
     stance: Stance = "context"
     comment: str = ""
+
+
+class OfficialContact(BaseModel):
+    id: str
+    name: str
+    acronym: str = ""
+    category: str = ""
+    website: str = ""
+    email: str = ""
+    phone: str = ""
+    address: str = ""
+    verified_at: str | None = None
+    reason: str = ""
+
+
+ReasoningKind = Literal["contre_exemple", "absurde", "ordre_de_grandeur", "coherence", "sophisme"]
+ReasoningOutcome = Literal["refute", "affaiblit", "compatible", "non_concluant"]
+
+
+class ReasoningStep(BaseModel):
+    text: str
+    outcome: Literal["contredite", "compatible", "non_testable"] = "non_testable"
+    explanation: str = ""
+    refs: list[str] = []
+
+
+class ReasoningTest(BaseModel):
+    kind: ReasoningKind
+    label: str
+    outcome: ReasoningOutcome = "non_concluant"
+    summary: str = ""
+    hypothesis: str = ""
+    steps: list[ReasoningStep] = []
+    refs: list[str] = []
+    effect: str = ""
 
 
 class Claim(BaseModel):
@@ -107,12 +144,17 @@ class Claim(BaseModel):
     truth_score: float = 5.0
     evidence_weight: float = 0.0
     verdict: ClaimVerdict = "non_verifiable"
-    verdict_label: str = "Non Hoe-aona?ble"
+    verdict_label: str = "Non vérifiable"
     conclusion: str = ""
     arguments_for: list[str] = []
     arguments_against: list[str] = []
     evidence: list[Evidence] = []
     statistics: list[Statistic] = []
+    contacts: list[OfficialContact] = []
+    reasoning: list[ReasoningTest] = []
+    universal: bool = False
+    score_before_reasoning: float | None = None
+    reasoning_adjustment: float = 0.0
 
 
 class Criterion(BaseModel):
@@ -163,6 +205,10 @@ class AnalysisResult(BaseModel):
     weights: dict[str, float] = {}
 
 
+Workflow = Literal["a_traiter", "en_revue", "valide", "publie", "archive"]
+Role = Literal["media", "admin"]
+
+
 class AnalysisOut(BaseModel):
     id: str
     created_at: datetime
@@ -176,16 +222,59 @@ class AnalysisOut(BaseModel):
     verdict: GlobalVerdict | None = None
     result: AnalysisResult | None = None
     error: str | None = None
+    notes: str = ""
+    tags: list[str] = []
+    workflow: Workflow = "a_traiter"
+    owner_id: str | None = None
+    owner_name: str | None = None
+    editable: bool = False
 
 
 class AnalysisListItem(BaseModel):
     id: str
     created_at: datetime
+    updated_at: datetime | None = None
     status: Status
     title: str
     input_kind: str
     global_score: float | None = None
     verdict: GlobalVerdict | None = None
+    notes: str = ""
+    tags: list[str] = []
+    workflow: Workflow = "a_traiter"
+
+
+class AnalysisUpdate(BaseModel):
+    title: str | None = Field(None, min_length=1, max_length=160)
+    notes: str | None = Field(None, max_length=10_000)
+    tags: list[str] | None = Field(None, max_length=20)
+    workflow: Workflow | None = None
+
+    @field_validator("tags")
+    @classmethod
+    def _clean_tags(cls, v: list[str] | None) -> list[str] | None:
+        if v is None:
+            return v
+        out: list[str] = []
+        for tag in v:
+            tag = " ".join(tag.strip().split())[:40]
+            if tag and tag.lower() not in {t.lower() for t in out}:
+                out.append(tag)
+        return out
+
+
+class TagCount(BaseModel):
+    tag: str
+    count: int
+
+
+class AnalysisStats(BaseModel):
+    total: int
+    average_score: float | None = None
+    by_verdict: dict[str, int] = {}
+    by_workflow: dict[str, int] = {}
+    by_status: dict[str, int] = {}
+    tags: list[TagCount] = []
 
 
 class AnalysisPage(BaseModel):
@@ -208,3 +297,178 @@ class HealthOut(BaseModel):
     mcp_tools: list[str]
     mcp_errors: list[str]
     providers: list[ProviderStatus]
+
+
+# ---------- comptes ----------
+class UserOut(BaseModel):
+    id: str
+    created_at: datetime
+    email: str
+    display_name: str
+    organization: str = ""
+    bio: str = ""
+    role: Role
+    active: bool
+
+
+class PublicUser(BaseModel):
+    id: str
+    created_at: datetime
+    display_name: str
+    organization: str = ""
+    bio: str = ""
+    role: Role
+    posts_count: int = 0
+
+
+class AdminUser(UserOut):
+    analyses_count: int = 0
+    posts_count: int = 0
+
+
+class RegisterIn(BaseModel):
+    email: str = Field(..., max_length=200)
+    password: str = Field(..., min_length=8, max_length=200)
+    display_name: str = Field(..., min_length=2, max_length=80)
+    organization: str = Field("", max_length=120)
+
+    @field_validator("email")
+    @classmethod
+    def _email(cls, v: str) -> str:
+        v = v.strip().lower()
+        local, _, domain = v.partition("@")
+        if not local or "." not in domain or " " in v:
+            raise ValueError("Adresse e-mail invalide")
+        return v
+
+    @field_validator("display_name", "organization")
+    @classmethod
+    def _strip(cls, v: str) -> str:
+        return " ".join(v.split())
+
+
+class LoginIn(BaseModel):
+    email: str
+    password: str
+
+
+class ProfileUpdate(BaseModel):
+    display_name: str | None = Field(None, min_length=2, max_length=80)
+    organization: str | None = Field(None, max_length=120)
+    bio: str | None = Field(None, max_length=600)
+
+
+class PasswordChange(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=200)
+
+
+class AdminUserUpdate(BaseModel):
+    role: Role | None = None
+    active: bool | None = None
+
+
+class AuthConfig(BaseModel):
+    allow_registration: bool
+    has_users: bool
+
+
+# ---------- réseau social ----------
+class PostAnalysis(BaseModel):
+    id: str
+    title: str
+    global_score: float | None = None
+    verdict: GlobalVerdict | None = None
+    input_kind: str = "text"
+
+
+class PostOut(BaseModel):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+    body: str
+    author_id: str
+    author_name: str
+    author_organization: str = ""
+    author_role: Role = "media"
+    image_url: str | None = None
+    analysis: PostAnalysis | None = None
+    likes: int = 0
+    liked: bool = False
+    comments_count: int = 0
+    hidden: bool = False
+    can_edit: bool = False
+    can_moderate: bool = False
+
+
+class PostPage(BaseModel):
+    items: list[PostOut]
+    total: int
+
+
+class PostUpdate(BaseModel):
+    body: str = Field(..., min_length=1, max_length=5000)
+
+
+class CommentIn(BaseModel):
+    body: str = Field(..., min_length=1, max_length=2000)
+
+
+class CommentOut(BaseModel):
+    id: str
+    created_at: datetime
+    body: str
+    author_id: str
+    author_name: str
+    author_organization: str = ""
+    can_delete: bool = False
+
+
+class PlatformStats(BaseModel):
+    users: int
+    active_users: int
+    admins: int
+    analyses: int
+    posts: int
+    hidden_posts: int
+    comments: int
+    likes: int
+
+
+# ---------- annuaire des sources officielles ----------
+class OfficialSourceIn(BaseModel):
+    name: str = Field(..., min_length=2, max_length=160)
+    acronym: str = Field("", max_length=30)
+    category: str = Field("", max_length=80)
+    website: str = Field("", max_length=300)
+    email: str = Field("", max_length=300)
+    phone: str = Field("", max_length=200)
+    address: str = Field("", max_length=300)
+    notes: str = Field("", max_length=2000)
+    topics: list[str] = Field([], max_length=60)
+    verified_at: str | None = Field(None, max_length=10)
+    active: bool = True
+
+    @field_validator("website")
+    @classmethod
+    def _url(cls, v: str) -> str:
+        v = v.strip()
+        if v and not v.startswith(("http://", "https://")):
+            v = "https://" + v
+        return v
+
+    @field_validator("topics")
+    @classmethod
+    def _topics(cls, v: list[str]) -> list[str]:
+        out: list[str] = []
+        for x in v:
+            x = " ".join(x.strip().lower().split())[:60]
+            if x and x not in out:
+                out.append(x)
+        return out
+
+
+class OfficialSourceOut(OfficialSourceIn):
+    id: str
+    created_at: datetime
+    updated_at: datetime

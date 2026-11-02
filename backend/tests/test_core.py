@@ -76,20 +76,13 @@ def ev(stance, reliability_=0.9, confidence=0.9, origin="news"):
     return NS(stance=stance, reliability=reliability_, confidence=confidence, origin=origin)
 
 
-def test_verdict_factcheck():
-    assert scoring.rating_to_stance("Faux")[0] == "refutes"
-    assert scoring.rating_to_stance("Mostly True") == ("supports", 0.75)
-    assert scoring.rating_to_stance("Not true")[0] == "refutes"
-    assert scoring.rating_to_stance("Trompeur") == ("refutes", 0.5)
-
-
 def test_sans_preuve_non_verifiable():
     score, weight = scoring.claim_truth([], [])
     assert score == 5.0 and scoring.claim_verdict(score, weight) == "non_verifiable"
 
 
 def test_preuves_qui_contredisent():
-    score, weight = scoring.claim_truth([ev("refutes", origin="factcheck"), ev("refutes")], [])
+    score, weight = scoring.claim_truth([ev("refutes"), ev("refutes")], [])
     assert score < 2 and scoring.claim_verdict(score, weight) == "faux"
 
 
@@ -111,3 +104,67 @@ def test_plafond_contenu_genere():
 def test_exemple_maquette():
     g = scoring.global_score(8.5, 6.5, 8.0, 0.18, (0.4, 0.4, 0.2))
     assert g == 7.6 and scoring.global_verdict(g) == "plutot_fiable"
+
+
+# ---------- tests de raisonnement ----------
+def _stat(claimed, official, sid="S1"):
+    from app.schemas import Statistic
+    return Statistic(id=sid, indicator_code="FP.CPI.TOTL.ZG", indicator_name="Inflation", country="Madagascar",
+                     country_code="MDG", latest_year=2026, latest_value=official, unit="%", claimed_value=claimed,
+                     source_name="FMI", source_url="https://imf.org")
+
+
+def _ev(eid, stance="context", reliability=0.9, official=True):
+    from app.schemas import Evidence
+    return Evidence(id=eid, url=f"https://x.mg/{eid}", title="t", publisher="p", domain="x.mg", origin="web",
+                    category="source officielle", official=official, reliability=reliability, stance=stance,
+                    confidence=0.8)
+
+
+def test_affirmation_absolue():
+    from app.services.claims import is_universal
+    assert is_universal("Tous les enfants sont vaccinés à Toamasina")
+    assert is_universal("La JIRAMA ne coupe jamais le courant")
+    assert not is_universal("Le prix du riz a augmenté en octobre")
+
+
+def test_ordre_de_grandeur():
+    from app.services import reasoning
+    assert reasoning.magnitude_test([_stat("45 %", 8.4)]).outcome == "refute"
+    assert reasoning.magnitude_test([_stat("8 %", 8.4)]).outcome == "compatible"
+    assert reasoning.magnitude_test([_stat("12 %", 8.4)]).outcome == "affaiblit"
+
+
+def test_tests_sans_preuve_non_retenus():
+    from app.services import reasoning
+    data = {"tests": {
+        "contre_exemple": {"outcome": "refute", "summary": "inventé", "refs": ["E9"]},
+        "absurde": {"hypothesis": "Supposons…", "steps": [
+            {"consequence": "les prix doubleraient", "outcome": "contredite", "refs": ["E1"]},
+            {"consequence": "conséquence sans preuve", "outcome": "contredite", "refs": []}]},
+        "sophismes": [{"type": "généralisation hâtive", "passage": "tous", "explanation": "…"}]}}
+    tests = {t.kind: t for t in reasoning.parse_tests(data, [_ev("E1")], [], universal=True, counter_searched=True)}
+    assert tests["contre_exemple"].outcome == "non_concluant"          # référence inventée
+    assert tests["absurde"].outcome == "refute"                         # conséquence démentie par une source officielle
+    assert [s.outcome for s in tests["absurde"].steps] == ["contredite", "non_testable"]
+    assert "sophisme" in tests
+
+
+def test_effet_borne_sur_le_score():
+    from app.schemas import ReasoningTest
+    from app.services import reasoning
+    refute = ReasoningTest(kind="contre_exemple", label="", outcome="refute")
+    score, weight, adj = reasoning.apply(8.0, 1.0, [refute], universal=True)
+    assert score == 3.0 and adj == -5.0 and weight > 1.0                 # un contre-exemple réfute une affirmation absolue
+    score, _, _ = reasoning.apply(8.0, 1.0, [ReasoningTest(kind="contre_exemple", label="", outcome="refute")], universal=False)
+    assert score == 7.0
+    ok = ReasoningTest(kind="absurde", label="", outcome="compatible")
+    assert reasoning.apply(9.8, 1.0, [ok], universal=False)[0] == 10.0
+
+
+def test_coherence_limitee_a_l_enonce():
+    from app.services import reasoning
+    data = {"tests": {"coherence": {"outcome": "affaiblit", "summary": "Incompatible avec la statistique S1"}}}
+    assert not any(t.kind == "coherence" for t in reasoning.parse_tests(data, [], [], False, False))
+    data = {"tests": {"coherence": {"outcome": "affaiblit", "summary": "Le texte annonce 3 morts puis 30 morts."}}}
+    assert any(t.kind == "coherence" for t in reasoning.parse_tests(data, [], [], False, False))

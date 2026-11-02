@@ -10,7 +10,7 @@ import logging
 import re
 
 from ..schemas import Claim
-from . import scoring
+from . import reasoning, scoring
 from .claims import ClaimDraft
 from .evidence import Collected
 from .llm import LLMClient
@@ -39,12 +39,13 @@ def _fmt_value(value: float | None) -> str:
 def _prompt(draft: ClaimDraft, col: Collected, lang: str) -> str:
     lines = []
     for e in col.evidence:
-        extra = f" | Verdict du fact-checker : {e.rating}" if e.rating else ""
-        lines.append(f"[{e.id}] {e.publisher} ({e.category}, fiabilité {e.reliability:.2f}, date {e.published_at or 'inconnue'})"
-                     f" — {e.title}{extra}\n    Extrait : « {e.excerpt} »")
+        kind = "SOURCE OFFICIELLE, " if e.official else ("PUBLICATION DE LA PLATEFORME, " if e.origin == "community" else "")
+        lines.append(f"[{e.id}] {e.publisher} ({kind}{e.category}, fiabilité {e.reliability:.2f}, date {e.published_at or 'inconnue'})"
+                     f" — {e.title}\n    Extrait : « {e.excerpt} »")
     for s in col.statistics:
         serie = ", ".join(f"{p.year} : {_fmt_value(p.value)}" for p in s.series[-5:])
-        lines.append(f"[{s.id}] Statistique officielle — {s.indicator_name}, {s.country} ({s.unit}) : "
+        est = f" (valeurs à partir de {s.estimate_from_year} = estimations)" if s.estimate_from_year else ""
+        lines.append(f"[{s.id}] Statistique officielle ({s.source_name}{est}) — {s.indicator_name}, {s.country} ({s.unit}) : "
                      f"dernière valeur {_fmt_value(s.latest_value)} en {s.latest_year} ; série : {serie} ; "
                      f"base mise à jour le {s.last_updated or 'n.d.'}. Valeur annoncée dans le contenu : {s.claimed_value or 'non précisée'}")
     evidence_block = "\n".join(lines) or "(aucune preuve trouvée)"
@@ -54,8 +55,10 @@ Preuves disponibles :
 {evidence_block}
 
 Pour chaque preuve, indique si elle CONFIRME l'affirmation (supports), la CONTREDIT (refutes) ou n'apporte
-que du CONTEXTE (context), avec une confiance entre 0 et 1. Un fact-check ne compte que s'il porte bien sur la
-même affirmation. Pour une statistique, compare la valeur annoncée à la donnée officielle en tenant compte de
+que du CONTEXTE (context), avec une confiance entre 0 et 1. Le public est principalement malgache : privilégie les
+sources officielles malgaches et internationales. Les publications de la plateforme sont des témoignages de
+rédactions partenaires : elles ne suffisent pas seules à établir un fait. Une preuve dont la date est antérieure aux
+faits ne peut pas les confirmer. Pour une statistique, compare la valeur annoncée à la donnée officielle en tenant compte de
 l'année et de l'unité ; signale un écart chiffré.
 
 Réponds en {LANG_NAMES.get(lang, 'français')} avec ce JSON :
@@ -64,7 +67,8 @@ Réponds en {LANG_NAMES.get(lang, 'français')} avec ce JSON :
  "arguments_for": ["argument qui soutient l'affirmation, terminé par la référence, ex. [E2]"],
  "arguments_against": ["argument qui la contredit, terminé par la référence, ex. [S1]"],
  "conclusion": "une phrase de conclusion prudente"}}
-Si les preuves sont insuffisantes, laisse les listes d'arguments vides et dis-le dans la conclusion."""
+Si les preuves sont insuffisantes, laisse les listes d'arguments vides et dis-le dans la conclusion.
+{reasoning.prompt_section(draft.universal, draft.implications)}"""
 
 
 def _numeric_stance(claimed: str | None, official: float | None) -> tuple[str, str]:
@@ -108,10 +112,12 @@ async def evaluate(claim_id: str, draft: ClaimDraft, col: Collected, llm: LLMCli
     arguments_for: list[str] = []
     arguments_against: list[str] = []
     conclusion = ""
+    tests = None
+    counter_searched = col.counter_searched
 
     if llm.available and known:
         try:
-            data = await llm.chat_json(SYSTEM, _prompt(draft, col, lang), max_tokens=4000)
+            data = await llm.chat_json(SYSTEM, _prompt(draft, col, lang), max_tokens=6000)
             by_id = {e.id: e for e in col.evidence}
             for item in data.get("evidence", []):
                 e = by_id.get(str(item.get("id")))
@@ -128,9 +134,10 @@ async def evaluate(claim_id: str, draft: ClaimDraft, col: Collected, llm: LLMCli
             arguments_for = _valid_refs(data.get("arguments_for"), known)
             arguments_against = _valid_refs(data.get("arguments_against"), known)
             conclusion = truncate(str(data.get("conclusion", "")), 400)
+            tests = reasoning.parse_tests(data, col.evidence, col.statistics, draft.universal, counter_searched)
         except Exception as exc:  # noqa: BLE001
             log.warning("Évaluation LLM échouée : %s", exc)
-            warnings.append("Évaluation par LLM indisponible pour une affirmation : verdicts des fact-checks et chiffres officiels seulement")
+            warnings.append("Évaluation par LLM indisponible pour une affirmation : chiffres officiels seulement")
 
     if not conclusion:  # repli déterministe
         for s in col.statistics:
@@ -140,19 +147,23 @@ async def evaluate(claim_id: str, draft: ClaimDraft, col: Collected, llm: LLMCli
             if e.stance == "supports":
                 arguments_for.append(f"{e.publisher} : « {truncate(e.excerpt, 180)} » [{e.id}]")
             elif e.stance == "refutes":
-                arguments_against.append(f"{e.publisher} ({e.rating or 'contredit'}) : « {truncate(e.excerpt, 180)} » [{e.id}]")
+                arguments_against.append(f"{e.publisher} (contredit) : « {truncate(e.excerpt, 180)} » [{e.id}]")
         for s in col.statistics:
             if s.comment and s.stance != "context":
                 (arguments_for if s.stance == "supports" else arguments_against).append(f"{s.comment} [{s.id}]")
         conclusion = ("Aucune preuve suffisante n'a été trouvée." if not (arguments_for or arguments_against)
-                      else "Conclusion établie à partir des fact-checks et des statistiques officielles.")
+                      else "Conclusion établie à partir des preuves collectées et des statistiques officielles.")
 
-    score, weight = scoring.claim_truth(col.evidence, col.statistics)
+    if tests is None:
+        tests = reasoning.fallback_tests(col.evidence, col.statistics, draft.universal)
+    base, weight = scoring.claim_truth(col.evidence, col.statistics)
+    score, weight, adjustment = reasoning.apply(base, weight, tests, draft.universal)
     verdict = scoring.claim_verdict(score, weight)
     return Claim(
         id=claim_id, text=draft.text, search_query=draft.search_query,
         truth_score=score, evidence_weight=weight, verdict=verdict,
         verdict_label=scoring.CLAIM_LABELS[verdict], conclusion=conclusion,
         arguments_for=arguments_for, arguments_against=arguments_against,
-        evidence=col.evidence, statistics=col.statistics,
+        evidence=col.evidence, statistics=col.statistics, contacts=col.contacts,
+        reasoning=tests, universal=draft.universal, score_before_reasoning=base, reasoning_adjustment=adjustment,
     )

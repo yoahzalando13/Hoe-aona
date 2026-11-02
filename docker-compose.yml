@@ -1,12 +1,12 @@
 services:
-  Hoe aona?:
+  hoe-aona:
     build: .
     ports:
       - "8000:8000"
     env_file:
       - backend/.env
     volumes:
-      - Hoe aona?-data:/srv/backend/data
+      - hoe-aona-data:/srv/backend/data
     restart: unless-stopped
 volumes:
-  Hoe aona?-data:
+  hoe-aona-data:

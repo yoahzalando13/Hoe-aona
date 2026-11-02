@@ -1,0 +1,107 @@
+<section class="page page-wide admin">
+  <header class="a-head">
+    <h1 class="page-title">Administration</h1>
+    <p class="muted">Comptes du personnel média, modération du fil et activité de la plateforme.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Sections d’administration">
+    <button type="button" role="tab" [class.on]="tab() === 'overview'" [attr.aria-selected]="tab() === 'overview'" (click)="open('overview')">Vue d’ensemble</button>
+    <button type="button" role="tab" [class.on]="tab() === 'users'" [attr.aria-selected]="tab() === 'users'" (click)="open('users')">Comptes</button>
+    <button type="button" role="tab" [class.on]="tab() === 'posts'" [attr.aria-selected]="tab() === 'posts'" (click)="open('posts')">Modération</button>
+    <a class="tab-link" routerLink="/sources">Sources officielles</a>
+  </div>
+
+  @if (error()) { <p class="error-box" role="alert">{{ error() }}</p> }
+
+  @switch (tab()) {
+    @case ('overview') {
+      @if (stats(); as s) {
+        <h2 class="section-label">Plateforme</h2>
+        <div class="stat-grid">
+          <div class="stat"><b>{{ s.active_users }}</b><span>comptes actifs sur {{ s.users }}</span></div>
+          <div class="stat"><b>{{ s.admins }}</b><span>administrateurs</span></div>
+          <div class="stat"><b>{{ s.analyses }}</b><span>analyses</span></div>
+          <div class="stat"><b>{{ s.posts }}</b><span>publications ({{ s.hidden_posts }} masquées)</span></div>
+          <div class="stat"><b>{{ s.comments }}</b><span>commentaires</span></div>
+          <div class="stat"><b>{{ s.likes }}</b><span>mentions « J’apprécie »</span></div>
+        </div>
+      }
+      @if (analysisStats(); as a) {
+        <h2 class="section-label">Informations traitées (toutes rédactions)</h2>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Verdicts · score moyen {{ formatScore(a.average_score) }}/10</h3>
+            @for (v of verdicts; track v.key) {
+              <div class="bar-row">
+                <span>{{ v.label }}</span>
+                <div class="bar"><i [style.width.%]="a.total ? (vd(v.key) / a.total) * 100 : 0" [style.background]="toneColor(v.tone)"></i></div>
+                <b>{{ vd(v.key) }}</b>
+              </div>
+            }
+          </div>
+          <div class="card">
+            <h3>Suivi éditorial</h3>
+            @for (w of workflows; track w.key) {
+              <div class="bar-row">
+                <span>{{ w.label }}</span>
+                <div class="bar"><i [style.width.%]="a.total ? (wf(w.key) / a.total) * 100 : 0" style="background: var(--indigo)"></i></div>
+                <b>{{ wf(w.key) }}</b>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+
+    @case ('users') {
+      <div class="search">
+        <app-icon name="search" [size]="20" />
+        <label class="visually-hidden" for="uq">Rechercher un compte</label>
+        <input id="uq" type="search" placeholder="Nom, e-mail ou média" autocomplete="off" [ngModel]="userQuery()" (ngModelChange)="search('users', $event)">
+      </div>
+      @if (usersLoading() && !users().length) { <p class="muted">Chargement…</p> }
+      <ul class="users">
+        @for (u of users(); track u.id) {
+          <li class="user" [class.off]="!u.active">
+            <a class="avatar" [class]="avatarTone(u.id)" [routerLink]="['/profil', u.id]">{{ initials(u.display_name) }}</a>
+            <div class="u-t">
+              <span class="u-n">{{ u.display_name }} @if (u.id === auth.user()?.id) { <span class="muted">(vous)</span> }</span>
+              <span class="u-s">{{ u.email }} · {{ u.organization || 'Sans média' }}</span>
+              <span class="u-s">Inscrit le {{ u.created_at | date: 'd MMM y' }} · {{ u.analyses_count }} analyses · {{ u.posts_count }} publications</span>
+            </div>
+            <label class="visually-hidden" [for]="'role-' + u.id">Rôle de {{ u.display_name }}</label>
+            <select class="input role" [id]="'role-' + u.id" [ngModel]="u.role" (ngModelChange)="setRole(u, $event)">
+              <option ngValue="media">Personnel média</option>
+              <option ngValue="admin">Administrateur</option>
+            </select>
+            <button type="button" class="btn btn-sm" [class.btn-danger]="u.active" (click)="toggleActive(u)">
+              {{ u.active ? 'Désactiver' : 'Réactiver' }}
+            </button>
+          </li>
+        } @empty {
+          @if (!usersLoading()) { <li class="empty"><p>Aucun compte trouvé.</p></li> }
+        }
+      </ul>
+    }
+
+    @case ('posts') {
+      <div class="row-tools">
+        <div class="search">
+          <app-icon name="search" [size]="20" />
+          <label class="visually-hidden" for="pq">Rechercher une publication</label>
+          <input id="pq" type="search" placeholder="Texte ou auteur" autocomplete="off" [ngModel]="postQuery()" (ngModelChange)="search('posts', $event)">
+        </div>
+        <label class="hidden-only"><input type="checkbox" [ngModel]="onlyHidden()" (ngModelChange)="onlyHidden.set($event)"> Masquées seulement</label>
+      </div>
+      <p class="muted count">{{ postsTotal() }} publication{{ postsTotal() > 1 ? 's' : '' }} au total</p>
+      <div class="posts">
+        @for (p of visiblePosts(); track p.id) {
+          <app-post-card [post]="p" [moderation]="true" (changed)="replace($event)" (removed)="drop($event)" />
+        } @empty {
+          @if (!postsLoading()) { <div class="empty"><p>Aucune publication à modérer.</p></div> }
+        }
+      </div>
+    }
+  }
+  @if (notice()) { <div class="toast" role="status">{{ notice() }}</div> }
+</section>

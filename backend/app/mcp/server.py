@@ -9,23 +9,9 @@ from __future__ import annotations
 
 from mcp.server.fastmcp import FastMCP
 
-from ..tools import factcheck, gdelt, sightengine, tavily, webpage, wikipedia, worldbank
+from ..tools import gdelt, imf, newsdata, sightengine, tavily, webpage, wikipedia, worldbank
 
 mcp = FastMCP("hoe-aona-tools")
-
-
-# Google Fact Check est désactivé pour ce projet. L'API Tavily est désormais
-# la source principale pour les recherches web.
-# @mcp.tool()
-# async def factcheck_search(query: str, language: str = "fr", max_results: int = 6) -> dict:
-#     """Fact-checks déjà publiés (ClaimReview via Google Fact Check Tools) correspondant à une affirmation."""
-#     return await factcheck.search(query, language, max_results)
-#
-#
-# @mcp.tool()
-# async def factcheck_image_search(image_url: str, max_results: int = 6) -> dict:
-#     """Fact-checks publiés portant sur une image accessible publiquement."""
-#     return await factcheck.image_search(image_url, max_results)
 
 
 @mcp.tool()
@@ -35,15 +21,29 @@ async def wikipedia_search(query: str, language: str = "fr", limit: int = 3) -> 
 
 
 @mcp.tool()
-async def news_search(query: str, language: str | None = None, timespan: str = "3months", max_records: int = 8) -> dict:
+async def news_search(query: str, language: str | None = None, timespan: str = "3months", max_records: int = 8,
+                      source_country: str | None = None) -> dict:
     """Articles de presse mondiaux récents (GDELT DOC 2.0, 65 langues, 3 derniers mois)."""
-    return await gdelt.search(query, language, timespan, max_records)
+    return await gdelt.search(query, language, timespan, max_records, source_country)
 
 
 @mcp.tool()
-async def web_search(query: str, max_results: int = 6, days: int | None = None) -> dict:
-    """Recherche web générale (Tavily) avec extraits."""
-    return await tavily.search(query, max_results, days)
+async def news_madagascar(query: str, country: str = "mg", language: str = "fr,mg,en", max_results: int = 8) -> dict:
+    """Actualités récentes publiées dans un pays (NewsData.io), Madagascar par défaut."""
+    return await newsdata.search(query, country, language, max_results)
+
+
+@mcp.tool()
+async def web_search(query: str, max_results: int = 6, days: int | None = None,
+                     include_domains: list[str] | None = None, country: str | None = None) -> dict:
+    """Recherche web (Tavily) avec extraits ; `include_domains` limite aux sites indiqués."""
+    return await tavily.search(query, max_results, days, include_domains, country)
+
+
+@mcp.tool()
+async def imf_indicator(indicator: str, country: str = "MDG", years: int = 8) -> dict:
+    """Série récente d'un indicateur du FMI (WEO), avec l'estimation de l'année en cours (ex. PCPIPCH, MDG)."""
+    return await imf.indicator(indicator, country, years)
 
 
 @mcp.tool()

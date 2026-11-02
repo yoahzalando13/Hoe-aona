@@ -71,6 +71,9 @@ def _dossier(result: AnalysisResult, index: dict[str, int]) -> str:
         for e in claim.evidence:
             n = index.get(f"{claim.id}:{e.id}")
             parts.append(f"  Source [{n}] {e.publisher}, {e.published_at or 'date inconnue'} : « {truncate(e.excerpt, 260)} » ({e.stance})")
+        for test in claim.reasoning:
+            if test.outcome != "non_concluant" and test.kind != "sophisme":
+                parts.append(f"  Test « {test.label} » : {test.outcome} — {renumber(test.summary, claim.id)}")
     if result.excluded_sources:
         parts.append(f"\n{len(result.excluded_sources)} source(s) écartée(s) car probablement générées par IA ou peu fiables.")
     return "\n".join(parts)
@@ -89,6 +92,9 @@ def _template(result: AnalysisResult, sources: list[ArticleSource], index: dict[
         body.append(f"**Verdict : {claim.verdict_label}.** {renumber(claim.conclusion, claim.id)}")
         for a in claim.arguments_for + claim.arguments_against:
             body.append(f"- {renumber(a, claim.id)}")
+        for test in claim.reasoning:
+            if test.outcome in ("refute", "affaiblit", "compatible") and test.kind != "sophisme" and test.summary:
+                body.append(f"- *{test.label}* : {renumber(test.summary, claim.id)}")
         body.append("")
     stats = [(c, s) for c in result.claims for s in c.statistics]
     if stats:

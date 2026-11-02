@@ -1,9 +1,9 @@
-"""Repère les affirmations factuelles Hoe-aona?bles dans le contenu soumis."""
+"""Repère les affirmations factuelles vérifiables dans le contenu soumis."""
 from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from ..tools import worldbank
 from .llm import LLMClient
@@ -12,7 +12,7 @@ from .textutils import keywords, numbers_in, split_sentences, truncate
 log = logging.getLogger("hoe-aona.claims")
 
 SYSTEM = (
-    "Tu es un fact-checker professionnel. Tu identifies les affirmations Hoe-aona?bles, sans juger leur "
+    "Tu es un fact-checker professionnel. Tu identifies les affirmations vérifiables, sans juger leur "
     "véracité à cette étape. Tu réponds uniquement avec un objet JSON valide."
 )
 
@@ -26,10 +26,14 @@ class ClaimDraft:
     indicator_code: str | None = None
     country_iso3: str | None = None
     claimed_value: str | None = None
+    # Préparation des tests de raisonnement
+    counter_query: str | None = None          # recherche d'un contre-exemple
+    implications: list[dict] = field(default_factory=list)  # [{"consequence", "query"}] pour le test par l'absurde
+    universal: bool = False                   # affirmation absolue (« tous », « jamais »…) : un contre-exemple suffit
 
 
 def _prompt(text: str, max_claims: int, default_country: str) -> str:
-    return f"""Extrais au maximum {max_claims} affirmations factuelles Hoe-aona?BLES du contenu ci-dessous :
+    return f"""Extrais au maximum {max_claims} affirmations factuelles VÉRIFIABLES du contenu ci-dessous :
 chiffres, événements datés, citations attribuées, faits scientifiques ou sanitaires. Ignore les opinions,
 les questions et les formules vagues. Classe-les de la plus importante à la moins importante.
 
@@ -40,12 +44,30 @@ Pour chaque affirmation :
 - "language" : code ISO 639-1 de l'affirmation ;
 - "statistic" : null, ou {{"indicator_code": "<code de la liste>", "country_iso3": "<ISO3>", "claimed_value": "<valeur annoncée telle quelle>"}}
   si l'affirmation porte sur une donnée couverte par un indicateur de cette liste : {worldbank.catalog_for_prompt()}
+- "universal" : true si l'affirmation est absolue ou générale (« tous », « aucun », « jamais », « toujours », « 100 % »,
+  « partout », « le seul ») : un seul contre-exemple fiable suffit alors à la réfuter ;
+- "counter_query" : 3 à 8 mots-clés pour chercher un CONTRE-EXEMPLE ou un démenti (cas où l'affirmation ne se vérifie pas) ;
+- "implications" : 1 ou 2 conséquences concrètes et vérifiables qui seraient FORCÉMENT observables si l'affirmation
+  était vraie (test par l'absurde), chacune {{"consequence": "phrase", "query": "3 à 8 mots-clés pour la vérifier"}}.
 
+Contexte : le public est principalement à Madagascar. Le contenu peut être en malgache (code "mg"), en français
+ou mélanger les deux ; dans ce cas, écris "search_query" en français. Les lieux (Antananarivo, Toamasina…),
+institutions (JIRAMA, BNGRC, CENI, HCC…) et montants en ariary désignent Madagascar.
 Pays par défaut si aucun n'est précisé : {default_country}.
 Format : {{"topic": "sujet en 6 mots maximum", "summary": "résumé neutre du contenu en une phrase", "claims": [...]}}
 
 CONTENU :
 \"\"\"{truncate(text, 12000)}\"\"\""""
+
+
+UNIVERSAL_MARKERS = re.compile(
+    r"\b(tous|toutes|tout le monde|aucun|aucune|personne ne|jamais|toujours|partout|nulle part|le seul|la seule|"
+    r"100 ?%|sans exception|n'importe qui|chaque|all|every|never|always|nobody|none)\b", re.IGNORECASE)
+
+
+def is_universal(text: str) -> bool:
+    """Affirmation absolue : un seul contre-exemple fiable suffit à la réfuter."""
+    return bool(UNIVERSAL_MARKERS.search(text or ""))
 
 
 def _heuristic(text: str, max_claims: int, default_country: str) -> tuple[list[ClaimDraft], str, str]:
@@ -70,7 +92,8 @@ def _heuristic(text: str, max_claims: int, default_country: str) -> tuple[list[C
                 break
         drafts.append(ClaimDraft(truncate(sentence, 300), query, query, "fr", code,
                                  worldbank.guess_country(sentence, default_country) if code else None,
-                                 (numbers_in(sentence) or [None])[0] if code else None))
+                                 (numbers_in(sentence) or [None])[0] if code else None,
+                                 counter_query=f"démenti faux {query}"[:120], universal=is_universal(sentence)))
     first = split_sentences(text)[:1]
     return drafts, " ".join(keywords(text, 4)), truncate(first[0], 200) if first else ""
 
@@ -89,6 +112,11 @@ async def extract_claims(text: str, llm: LLMClient, max_claims: int, default_cou
                     continue
                 stat = c.get("statistic") or {}
                 code = stat.get("indicator_code") if stat.get("indicator_code") in worldbank.CATALOG else None
+                implications = [
+                    {"consequence": truncate(str(i.get("consequence", "")), 240), "query": truncate(str(i.get("query", "")), 120)}
+                    for i in (c.get("implications") or [])[:2]
+                    if isinstance(i, dict) and i.get("consequence") and i.get("query")
+                ]
                 drafts.append(ClaimDraft(
                     text=truncate(c["text"], 400),
                     search_query=c.get("search_query") or " ".join(keywords(c["text"], 7)),
@@ -97,10 +125,13 @@ async def extract_claims(text: str, llm: LLMClient, max_claims: int, default_cou
                     indicator_code=code,
                     country_iso3=(stat.get("country_iso3") or default_country).upper()[:3] if code else None,
                     claimed_value=str(stat.get("claimed_value")) if code and stat.get("claimed_value") else None,
+                    counter_query=truncate(str(c.get("counter_query") or ""), 120) or None,
+                    implications=implications,
+                    universal=bool(c.get("universal")) or is_universal(c["text"]),
                 ))
             if drafts:
                 return drafts, data.get("topic", ""), data.get("summary", "")
-            warnings.append("Le LLM n'a trouvé aucune affirmation Hoe-aona?ble ; repli heuristique utilisé")
+            warnings.append("Le LLM n'a trouvé aucune affirmation vérifiable ; repli heuristique utilisé")
         except Exception as exc:  # noqa: BLE001
             log.warning("Extraction LLM échouée : %s", exc)
             warnings.append("Extraction des affirmations par LLM indisponible ; repli heuristique utilisé")

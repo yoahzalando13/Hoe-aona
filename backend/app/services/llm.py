@@ -104,12 +104,23 @@ class LLMClient:
         raise LLMUnavailable("; ".join(errors) or "Aucune clé LLM configurée")
 
     async def chat_json(self, system: str, user: str, max_tokens: int = 4000) -> dict:
-        text = await self.chat([{"role": "system", "content": system}, {"role": "user", "content": user}],
-                               json_mode=True, max_tokens=max_tokens)
-        data = parse_json(text)
-        if not isinstance(data, dict):
-            raise ValueError("Réponse JSON inattendue")
-        return data
+        """Réponse JSON (objet). Un nouvel essai est fait si la réponse est tronquée ou mal formée."""
+        last_error: Exception | None = None
+        for attempt in range(2):
+            text = await self.chat([{"role": "system", "content": system}, {"role": "user", "content": user}],
+                                   json_mode=True, max_tokens=max_tokens + attempt * 2000)
+            try:
+                data = parse_json(text)
+            except ValueError as exc:
+                last_error = exc
+                log.warning("Réponse JSON illisible (%s), nouvel essai", exc)
+                continue
+            if isinstance(data, list) and data and all(isinstance(x, dict) for x in data):
+                data = {"claims": data}  # certains modèles renvoient directement la liste demandée
+            if isinstance(data, dict):
+                return data
+            last_error = ValueError("Réponse JSON inattendue")
+        raise last_error or ValueError("Réponse JSON inattendue")
 
     async def describe_image(self, image: bytes, mime: str, prompt: str) -> str:
         data_url = f"data:{mime};base64,{base64.b64encode(image).decode()}"

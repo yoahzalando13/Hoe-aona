@@ -36,3 +36,4 @@
 .skeleton { display: flex; flex-direction: column; gap: 10px; margin-top: 24px; }
 .skeleton span { height: 62px; border-radius: 16px; background: linear-gradient(90deg, var(--soft), var(--bg), var(--soft)); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
 @keyframes shimmer { to { background-position: -200% 0; } }
+.link-back { margin-left: auto; margin-right: 12px; padding-bottom: 5px; font-size: 13px; }

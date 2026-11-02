@@ -7,7 +7,7 @@ import {
   STANCE_LABEL, claimTone, formatNumber, formatScore, kindIcon, pct, relativeTime, scoreTone, stanceTone, toneColor,
 } from '../../core/format';
 import { MarkdownPipe } from '../../core/markdown';
-import { AnalysisOut, Article, Claim, Criterion, Statistic } from '../../core/models';
+import { AnalysisOut, Article, Claim, Criterion, ReasoningKind, ReasoningOutcome, Statistic } from '../../core/models';
 import { Icon } from '../../shared/icon';
 import { ScoreRing } from '../../shared/score-ring';
 
@@ -30,8 +30,9 @@ const CRITERION_ICON: Record<Criterion['key'], { icon: string; tone: string }> =
 };
 
 const TOOL_LABELS: Record<string, string> = {
-  factcheck_search: 'Google Fact Check', factcheck_image_search: 'Fact Check (image)', wikipedia_search: 'Wikipedia',
+  wikipedia_search: 'Wikipedia',
   news_search: 'GDELT', web_search: 'Tavily', worldbank_indicator: 'Banque mondiale', fetch_page: 'Lecture de pages',
+  news_madagascar: 'NewsData.io (presse malgache)', imf_indicator: 'FMI', platform_posts: 'Fil média Hoe-aona?',
   detect_ai_image: 'Sightengine',
 };
 
@@ -173,7 +174,7 @@ export class ResultPage {
 
   protected back(): void {
     if (history.length > 1) history.back();
-    else this.router.navigate(['/historique']);
+    else this.router.navigate(['/espace']);
   }
 
   protected async share(): Promise<void> {
@@ -203,6 +204,47 @@ export class ResultPage {
     } catch {
       this.flash('Copie impossible : utilisez le téléchargement');
     }
+  }
+
+  protected readonly thisYear = new Date().getFullYear();
+
+  protected readonly reasoningIcon: Record<ReasoningKind, string> = {
+    contre_exemple: 'search', absurde: 'layers', ordre_de_grandeur: 'chart', coherence: 'check', sophisme: 'alert',
+  };
+  protected readonly outcomeLabel: Record<ReasoningOutcome, string> = {
+    refute: 'Réfute', affaiblit: 'Affaiblit', compatible: 'Compatible', non_concluant: 'Non concluant',
+  };
+  protected readonly stepLabel: Record<string, string> = {
+    contredite: 'Démentie', compatible: 'Vérifiée', non_testable: 'Non testable',
+  };
+
+  protected outcomeTone(o: string): string {
+    return o === 'refute' || o === 'contredite' ? 'bad' : o === 'affaiblit' ? 'mid'
+      : o === 'compatible' ? 'good' : 'neutral';
+  }
+
+  /** Tests à montrer : on masque les « non concluants » sans contenu utile. */
+  protected shownTests(claim: Claim) {
+    return (claim.reasoning ?? []).filter((t) => t.outcome !== 'non_concluant' || t.steps.length || t.kind === 'sophisme');
+  }
+
+  protected signed(n: number): string {
+    return (n > 0 ? '+' : '') + n.toFixed(1).replace('.', ',');
+  }
+
+  /** Écart entre l'année de la donnée et l'année en cours, pour signaler une statistique ancienne. */
+  protected statAge(s: Statistic): number {
+    return s.latest_year ? this.thisYear - s.latest_year : 99;
+  }
+
+  protected isEstimate(s: Statistic, year: number | null): boolean {
+    return !!s.estimate_from_year && !!year && year >= s.estimate_from_year;
+  }
+
+  protected tel(phone: string): { label: string; href: string }[] {
+    return phone.split('/').map((p) => p.trim()).filter(Boolean).map((label) => ({
+      label, href: 'tel:' + label.replace(/\(.*?\)/g, '').replace(/[^\d+]/g, ''),
+    }));
   }
 
   protected downloadUrl(format: 'md' | 'html'): string {

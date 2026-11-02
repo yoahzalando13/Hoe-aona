@@ -1,0 +1,69 @@
+<section class="page profile">
+  @if (loading()) {
+    <div class="skeleton" aria-busy="true"><span></span><span></span></div>
+  } @else if (error()) {
+    <p class="error-box" role="alert">{{ error() }}</p>
+    <a class="btn" routerLink="/fil" style="margin-top:14px"><app-icon name="back" [size]="18" />Retour au fil</a>
+  } @else if (profile(); as p) {
+    <header class="card hero">
+      <span class="avatar big" [class]="avatarTone(p.id)">{{ initials(p.display_name) }}</span>
+      <div class="info">
+        <h1>{{ p.display_name }}
+          @if (p.role === 'admin') { <span class="badge neutral">Administration</span> }
+        </h1>
+        <p class="org">{{ p.organization || 'Personnel média' }}</p>
+        @if (p.bio) { <p class="bio">{{ p.bio }}</p> }
+        <p class="muted">Membre depuis {{ p.created_at | date: 'MMMM y' }} · {{ p.posts_count }} publication{{ p.posts_count > 1 ? 's' : '' }}</p>
+      </div>
+      @if (isMe() && !editing()) {
+        <div class="hero-actions">
+          <button type="button" class="btn btn-sm" (click)="startEdit()"><app-icon name="edit" [size]="16" />Modifier</button>
+          <button type="button" class="btn btn-sm btn-outline" (click)="auth.logout()"><app-icon name="logout" [size]="16" />Déconnexion</button>
+        </div>
+      }
+    </header>
+
+    @if (isMe() && editing()) {
+      <div class="grid-2">
+        <form class="card form" (ngSubmit)="save()" #pf="ngForm">
+          <h2>Mon profil</h2>
+          <label class="field"><span>Nom affiché</span>
+            <input class="input" name="dn" [(ngModel)]="form.display_name" required minlength="2" maxlength="80"></label>
+          <label class="field"><span>Média ou rédaction</span>
+            <input class="input" name="org" [(ngModel)]="form.organization" maxlength="120"></label>
+          <label class="field"><span>Présentation</span>
+            <textarea class="input" name="bio" [(ngModel)]="form.bio" maxlength="600" rows="3"></textarea></label>
+          @if (formError()) { <p class="error-box" role="alert">{{ formError() }}</p> }
+          <div class="row-end">
+            <button type="button" class="btn btn-sm" (click)="editing.set(false)">Annuler</button>
+            <button type="submit" class="btn btn-sm btn-primary" [disabled]="saving() || pf.invalid">{{ saving() ? 'Enregistrement…' : 'Enregistrer' }}</button>
+          </div>
+        </form>
+        <form class="card form" (ngSubmit)="changePassword()" #pw="ngForm">
+          <h2><app-icon name="lock" [size]="18" /> Mot de passe</h2>
+          <p class="muted">Adresse de connexion : {{ auth.user()?.email }}</p>
+          <label class="field"><span>Mot de passe actuel</span>
+            <input class="input" type="password" name="cur" [(ngModel)]="pwd.current" required autocomplete="current-password"></label>
+          <label class="field"><span>Nouveau mot de passe (8 caractères minimum)</span>
+            <input class="input" type="password" name="new" [(ngModel)]="pwd.next" required minlength="8" autocomplete="new-password"></label>
+          @if (pwdError()) { <p class="error-box" role="alert">{{ pwdError() }}</p> }
+          <div class="row-end">
+            <button type="submit" class="btn btn-sm btn-primary" [disabled]="pwdBusy() || pw.invalid">Changer le mot de passe</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <h2 class="section-label">Publications</h2>
+    <div class="list">
+      @for (post of posts(); track post.id) {
+        <app-post-card [post]="post" (changed)="replace($event)" (removed)="drop($event)" />
+      } @empty {
+        <div class="empty"><p>{{ isMe() ? 'Vous n’avez encore rien publié.' : 'Aucune publication pour l’instant.' }}</p>
+          @if (isMe()) { <a class="btn btn-primary" routerLink="/fil" style="margin-top:12px">Publier sur le fil</a> }
+        </div>
+      }
+    </div>
+  }
+  @if (notice()) { <div class="toast" role="status">{{ notice() }}</div> }
+</section>

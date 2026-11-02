@@ -1,4 +1,4 @@
-import { ClaimVerdict, GlobalVerdict, Stance } from './models';
+import { ClaimVerdict, GlobalVerdict, Stance, Workflow } from './models';
 
 export type Tone = 'good' | 'mid' | 'bad' | 'neutral';
 
@@ -90,4 +90,35 @@ export function relativeTime(iso: string, now = new Date()): string {
   const hours = Math.round(minutes / 60);
   if (hours < 24) return `il y a ${hours} h`;
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+export const WORKFLOWS: { key: Workflow; label: string; tone: string }[] = [
+  { key: 'a_traiter', label: 'À traiter', tone: 'tone-grey' },
+  { key: 'en_revue', label: 'En revue', tone: 'tone-amber' },
+  { key: 'valide', label: 'Validée', tone: 'tone-green' },
+  { key: 'publie', label: 'Publiée', tone: 'tone-blue' },
+  { key: 'archive', label: 'Archivée', tone: 'tone-purple' },
+];
+
+export function workflowLabel(w: Workflow): string {
+  return WORKFLOWS.find((x) => x.key === w)?.label ?? w;
+}
+
+export function verdictLabel(v: GlobalVerdict | null | undefined): string {
+  const labels: Record<GlobalVerdict, string> = {
+    fiable: 'Fiable', plutot_fiable: 'Plutôt fiable', a_verifier: 'À vérifier', douteux: 'Douteux',
+  };
+  return v ? labels[v] : 'Sans verdict';
+}
+
+export function initials(name: string): string {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]!.toUpperCase()).join('') || '?';
+}
+
+/** Teinte stable d'un avatar, dérivée de l'identifiant. */
+export function avatarTone(id: string): string {
+  const tones = ['tone-blue', 'tone-orange', 'tone-purple', 'tone-green', 'tone-amber', 'tone-red'];
+  let h = 0;
+  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return tones[h % tones.length]!;
 }

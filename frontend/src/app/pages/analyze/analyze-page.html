@@ -6,34 +6,8 @@
     <p class="sub">Ajoutez une image, un document, un texte ou un audio. Nous évaluons la source, la véracité et la part d’IA, preuves à l’appui.</p>
   </header>
 
-  <div class="tiles" role="group" aria-label="Type de donnée à ajouter">
-    <button type="button" class="tile" (click)="openPicker('image')">
-      <span class="chip-icon tone-blue"><app-icon name="image" /></span>
-      <span><strong>Image</strong><small>JPG, PNG, capture</small></span>
-    </button>
-    <button type="button" class="tile" (click)="openPicker('document')">
-      <span class="chip-icon tone-orange"><app-icon name="document" /></span>
-      <span><strong>Document</strong><small>PDF, DOCX, TXT</small></span>
-    </button>
-    <button type="button" class="tile" (click)="focusText()">
-      <span class="chip-icon tone-purple"><app-icon name="text" /></span>
-      <span><strong>Texte</strong><small>Saisir ou coller</small></span>
-    </button>
-    <button type="button" class="tile" (click)="openPicker('audio')">
-      <span class="chip-icon tone-green"><app-icon name="audio" /></span>
-      <span><strong>Audio</strong><small>Importer un fichier</small></span>
-    </button>
-  </div>
   <input #picker type="file" multiple class="visually-hidden" [accept]="pickerAccept()" (change)="onPicked($event)"
          tabindex="-1" aria-hidden="true">
-
-  <div class="link-row">
-    <span class="link-icon"><app-icon name="link" [size]="18" /></span>
-    <label class="visually-hidden" for="url">Lien de la source</label>
-    <input id="url" type="url" inputmode="url" placeholder="Lien de la source (https://…)"
-           [ngModel]="urlDraft()" (ngModelChange)="urlDraft.set($event)" (keydown.enter)="addUrl()">
-    <button type="button" class="btn btn-sm" (click)="addUrl()" [disabled]="!urlDraft().trim()">Ajouter</button>
-  </div>
 
   @if (count()) {
     <h2 class="section-label">Ajoutés ({{ count() }})</h2>
@@ -43,19 +17,10 @@
           @if (a.preview) {
             <img class="thumb" [src]="a.preview" alt="">
           } @else {
-            <span class="thumb chip-icon" [class]="kindIcon(a.kind).tone"><app-icon [name]="kindIcon(a.kind).icon" [size]="18" /></span>
+            <span class="thumb menu-icon"><app-icon [name]="kindIcon(a.kind).icon" [size]="18" /></span>
           }
           <span class="meta"><span class="n">{{ a.file.name }}</span><span class="s">{{ fileSize(a.file.size) }}</span></span>
           <button type="button" class="icon-btn x" (click)="removeAttachment(a)" [attr.aria-label]="'Retirer ' + a.file.name">
-            <app-icon name="close" [size]="16" />
-          </button>
-        </li>
-      }
-      @for (u of urls(); track u) {
-        <li class="file">
-          <span class="thumb chip-icon tone-grey"><app-icon name="link" [size]="18" /></span>
-          <span class="meta"><span class="n">{{ hostOf(u) }}</span><span class="s">Source fournie</span></span>
-          <button type="button" class="icon-btn x" (click)="removeUrl(u)" [attr.aria-label]="'Retirer ' + u">
             <app-icon name="close" [size]="16" />
           </button>
         </li>
@@ -72,9 +37,35 @@
               [ngModel]="text()" (ngModelChange)="text.set($event)" (keydown)="onKeydown($event)" maxlength="50000"></textarea>
     <div class="row">
       <div class="left">
-        <button type="button" class="round" (click)="openPicker('document')" aria-label="Joindre un fichier">
-          <app-icon name="plus" />
-        </button>
+        <div class="insert">
+          <button type="button" class="round" (click)="menuOpen.set(!menuOpen())" aria-label="Insérer un fichier"
+                  aria-haspopup="menu" [attr.aria-expanded]="menuOpen()">
+            <app-icon [name]="menuOpen() ? 'close' : 'plus'" />
+          </button>
+          @if (menuOpen()) {
+            <div class="menu-backdrop" (click)="menuOpen.set(false)"></div>
+            <ul class="insert-menu" role="menu" (keydown.escape)="menuOpen.set(false)">
+              <li role="none">
+                <button type="button" role="menuitem" (click)="pick('image')">
+                  <span class="menu-icon"><app-icon name="image" [size]="18" /></span>
+                  <span><strong>Image</strong><small>JPG, PNG, capture</small></span>
+                </button>
+              </li>
+              <li role="none">
+                <button type="button" role="menuitem" (click)="pick('document')">
+                  <span class="menu-icon"><app-icon name="document" [size]="18" /></span>
+                  <span><strong>Document</strong><small>PDF, DOCX, TXT</small></span>
+                </button>
+              </li>
+              <li role="none">
+                <button type="button" role="menuitem" (click)="pick('audio')">
+                  <span class="menu-icon"><app-icon name="audio" [size]="18" /></span>
+                  <span><strong>Audio</strong><small>Importer un fichier</small></span>
+                </button>
+              </li>
+            </ul>
+          }
+        </div>
         <span class="mode"><app-icon name="shield" [size]="16" />Analyse complète</span>
       </div>
       <div class="right">
