@@ -43,3 +43,12 @@
 .send { flex-shrink: 0; background: var(--ink); color: var(--bg); width: 38px; height: 38px; }
 .send:hover { background: var(--ink); }
 .send:disabled { opacity: .35; cursor: not-allowed; }
+
+/* Article publié depuis une analyse */
+.md-body { font-size: 14.5px; line-height: 1.6; overflow-wrap: anywhere; }
+.md-body :is(h2, h3, h4) { font-size: 15.5px; margin: 14px 0 4px; }
+.md-body > h2:first-child { font-size: 18px; margin-top: 0; line-height: 1.3; }
+.md-body p { margin: 6px 0; }
+.md-body ul, .md-body ol { padding-left: 20px; margin: 6px 0; }
+.clamped { max-height: 260px; overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent); mask-image: linear-gradient(#000 70%, transparent); }
+.more-btn { border: 0; background: transparent; padding: 4px 0; color: var(--indigo); font-size: 13.5px; font-weight: 500; }

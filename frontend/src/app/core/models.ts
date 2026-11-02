@@ -16,6 +16,7 @@ export interface Preferences {
   min_source_reliability: number;
   default_country: string;
   report_language: 'fr' | 'en' | 'mg';
+  ui_language?: 'fr' | 'en' | 'mg' | null;
   history_retention_days: number;
 }
 
@@ -143,9 +144,12 @@ export interface Article {
   lead: string;
   body_markdown: string;
   tags: string[];
+  key_points?: string[]; // absents des articles rédigés avant cette version
+  social_post?: string;
   sources: ArticleSource[];
   generated_by: 'llm' | 'modele';
   generated_at: string;
+  edited?: boolean;
 }
 
 export interface AnalysisResult {
@@ -164,6 +168,18 @@ export interface AnalysisResult {
   weights: Record<string, number>;
 }
 
+export type AgentKey = 'lecteur' | 'detecteur' | 'extracteur' | 'chercheur' | 'evaluateur' | 'calculateur' | 'redacteur';
+
+export interface AgentEvent {
+  at: number;
+  agent: AgentKey;
+  message: string;
+  status: 'running' | 'done' | 'error' | 'info';
+  detail: string;
+  tool: string;
+  duration?: number;
+}
+
 export interface AnalysisOut {
   id: string;
   created_at: string;
@@ -180,6 +196,7 @@ export interface AnalysisOut {
   notes: string;
   tags: string[];
   workflow: Workflow;
+  events: AgentEvent[];
   owner_id: string | null;
   owner_name: string | null;
   editable: boolean;
@@ -322,3 +339,31 @@ export interface OfficialSourceIn {
 }
 
 export interface OfficialSource extends OfficialSourceIn { id: string; created_at: string; updated_at: string; }
+
+// ---------- statistiques ----------
+export interface StatPoint { year: number; value: number; }
+export interface StatIndicator { code: string; label: string; unit: string; theme: string; imf: boolean; }
+export interface StatCountry { code: string; name: string; region: boolean; }
+export interface StatCatalog { indicators: StatIndicator[]; themes: string[]; countries: StatCountry[]; neighbours: string[]; }
+
+export interface StatSeries {
+  ok: boolean;
+  provider: 'worldbank' | 'imf';
+  indicator_code: string;
+  indicator_name?: string;
+  unit?: string;
+  country: string;
+  country_code: string;
+  series?: StatPoint[];
+  latest_year?: number | null;
+  latest_value?: number | null;
+  last_updated?: string | null;
+  estimate_from_year?: number | null;
+  source_name?: string;
+  source_url?: string;
+  error?: string;
+  imf?: StatSeries | null;
+}
+export interface StatSeriesPair { worldbank: StatSeries; imf: StatSeries | null; }
+
+export interface ArticleEdit { title: string; lead: string; body_markdown: string; key_points: string[]; social_post: string; }

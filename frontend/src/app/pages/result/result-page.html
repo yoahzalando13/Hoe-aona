@@ -1,31 +1,28 @@
 <section class="page page-wide result">
   <header class="appbar">
-    <button type="button" class="icon-btn" (click)="back()" aria-label="Retour">
+    <button type="button" class="icon-btn" (click)="back()" [attr.aria-label]="'Retour' | t">
       <app-icon name="back" />
     </button>
-    <h1>Résultat de l’analyse</h1>
+    <h1>{{ 'Résultat de l’analyse' | t }}</h1>
     @if (result()) {
     <button
       type="button"
       class="icon-btn"
       (click)="scrollToArticle()"
-      aria-label="Voir l’article prêt à publier"
+      [attr.aria-label]="'Voir l’article prêt à publier' | t"
     >
       <app-icon name="document" />
     </button>
-    @if (analysis()?.editable) {
-    <a
-      class="btn btn-sm btn-primary publish"
-      [routerLink]="['/fil']"
-      [queryParams]="{ analyse: analysis()!.id }"
-      ><app-icon name="feed" [size]="16" />Publier sur le fil</a
-    >
+    @if (analysis()?.editable && result()?.article) {
+    <button type="button" class="btn btn-sm btn-primary publish" (click)="openPublish('article')">
+      <app-icon name="feed" [size]="16" />{{ 'Publier sur le fil' | t }}
+    </button>
     }
     <button
       type="button"
       class="icon-btn"
       (click)="share()"
-      aria-label="Partager le résultat"
+      [attr.aria-label]="'Partager le résultat' | t"
     >
       <app-icon name="share" />
     </button>
@@ -33,18 +30,17 @@
   </header>
 
   @if (loading()) {
-  <div class="skeleton" aria-busy="true" aria-label="Chargement">
+  <div class="skeleton" aria-busy="true" [attr.aria-label]="'Chargement' | t">
     <span></span><span></span><span></span>
   </div>
   } @else if (empty()) {
   <div class="empty">
-    <h2>Aucune analyse pour l’instant</h2>
+    <h2>{{ 'Aucune analyse pour l’instant' | t }}</h2>
     <p>
-      Soumettez un texte, une image, un document ou un audio pour obtenir un
-      score et ses preuves.
+      {{ 'Soumettez un texte, une image, un document ou un audio pour obtenir un score et ses preuves.' | t }}
     </p>
     <a class="btn btn-primary" routerLink="/analyser" style="margin-top: 16px"
-      ><app-icon name="add" [size]="18" />Nouvelle analyse</a
+      ><app-icon name="add" [size]="18" />{{ 'Nouvelle analyse' | t }}</a
     >
   </div>
   } @else if (loadError()) {
@@ -53,42 +49,24 @@
   <div class="card failed">
     <span class="chip-icon tone-red"><app-icon name="alert" /></span>
     <div>
-      <h2>L’analyse n’a pas abouti</h2>
+      <h2>{{ 'L’analyse n’a pas abouti' | t }}</h2>
       <p class="muted">{{ a.error }}</p>
-      <a class="btn btn-sm" routerLink="/analyser">Relancer une analyse</a>
+      <a class="btn btn-sm" routerLink="/analyser">{{ 'Relancer une analyse' | t }}</a>
     </div>
   </div>
+  @if (a.events.length) {
+  <div class="card progress"><app-agent-progress [analysis]="a" mode="log" /></div>
+  }
 
   } @else if (a.status !== 'done') {
-  <div class="card progress" aria-live="polite">
-    <div class="progress-head">
-      <h2>Analyse en cours</h2>
-      <span class="muted">{{ a.progress }} %</span>
-    </div>
-    <div class="bar">
-      <i [style.width.%]="a.progress" style="background: var(--gradient)"></i>
-    </div>
-    <ol class="steps">
-      @for (s of steps; track s.at) {
-      <li [class]="stepState(s.at, a.progress)">
-        <span class="dot"
-          >@if (stepState(s.at, a.progress) === 'done') {
-          <app-icon name="check" [size]="14" /> }</span
-        >
-        {{ s.label }}
-      </li>
-      }
-    </ol>
-    <p class="muted">
-      Les sources sont interrogées une à une via le serveur MCP ; comptez 30
-      secondes à 2 minutes.
-    </p>
+  <div class="card progress">
+    <app-agent-progress [analysis]="a" />
   </div>
 
   } @else { @if (!a.editable && a.owner_name) {
   <p class="card readonly">
-    <app-icon name="eye" [size]="18" /> Analyse partagée par
-    <a [routerLink]="['/profil', a.owner_id]">{{ a.owner_name }}</a> : lecture seule.
+    <app-icon name="eye" [size]="18" /> {{ 'Analyse partagée par' | t }}
+    <a [routerLink]="['/profil', a.owner_id]">{{ a.owner_name }}</a> {{ ': lecture seule.' | t }}
   </p>
   } @if (result(); as r) {
   <div class="layout">
@@ -100,7 +78,7 @@
         /></span>
         <span
           ><strong>{{ inputsLabel() }}</strong
-          ><small>Analysé {{ analysedAgo() }}</small></span
+          ><small>{{ 'Analysé {quand}' | t: { quand: analysedAgo() } }}</small></span
         >
       </div>
 
@@ -111,7 +89,7 @@
           caption="Score global"
         />
         <span class="badge" [class]="scoreTone(r.global_score)"
-          ><app-icon name="shield" [size]="16" />{{ r.verdict_label }}</span
+          ><app-icon name="shield" [size]="16" />{{ r.verdict_label | t }}</span
         >
         <p class="summary">{{ r.summary }}</p>
       </div>
@@ -123,7 +101,7 @@
             <span class="chip-icon" [class]="criterionIcon[c.key].tone"
               ><app-icon [name]="criterionIcon[c.key].icon" [size]="20"
             /></span>
-            <h3>{{ c.label }}</h3>
+            <h3>{{ c.label | t }}</h3>
             <span class="val" [style.color]="toneColor(scoreTone(c.score))"
               >{{ formatScore(c.score) }}<small> /10</small></span
             >
@@ -142,8 +120,7 @@
             (click)="toggleDetails(c.key)"
             [attr.aria-expanded]="openDetails().has(c.key)"
           >
-            {{ openDetails().has(c.key) ? 'Masquer les arguments' : 'Voir les
-            arguments' }}
+            {{ openDetails().has(c.key) ? ('Masquer les arguments' | t) : ('Voir les arguments' | t) }}
             <app-icon
               name="chevron"
               [size]="14"
@@ -161,22 +138,21 @@
         }
       </div>
       <p class="muted weights">
-        Pondération : source {{ pct(r.weights['source']) }}, véracité {{
-        pct(r.weights['veracity']) }}, IA {{ pct(r.weights['ai']) }}
+        {{ 'Pondération : source {s}, véracité {v}, IA {ia}' | t: { s: pct(r.weights['source']), v: pct(r.weights['veracity']), ia: pct(r.weights['ai']) } }}
       </p>
     </aside>
 
     <!-- Colonne des preuves -->
     <div class="main-col">
       <h2 class="section-title">
-        Affirmations vérifiées ({{ r.claims.length }})
+        {{ 'Affirmations vérifiées ({n})' | t: { n: r.claims.length } }}
       </h2>
 
       @for (claim of r.claims; track claim.id) {
       <article class="card claim">
         <header class="claim-head">
           <span class="badge" [class]="claimTone(claim.verdict)"
-            >{{ claim.verdict_label }}</span
+            >{{ claim.verdict_label | t }}</span
           >
           <app-score-ring
             [score]="claim.truth_score"
@@ -186,22 +162,21 @@
         </header>
         <p class="claim-text">« {{ claim.text }} »</p>
         @if (claim.universal) {
-        <p class="universal muted"><app-icon name="alert" [size]="13" /> Affirmation absolue : un seul contre-exemple fiable suffit à la réfuter.</p>
+        <p class="universal muted"><app-icon name="alert" [size]="13" /> {{ 'Affirmation absolue : un seul contre-exemple fiable suffit à la réfuter.' | t }}</p>
         } @if (claim.conclusion) {
         <p class="conclusion">{{ claim.conclusion }}</p>
         } @if (shownTests(claim).length) {
-        <section class="reasoning" aria-label="Tests de raisonnement">
-          <h4 class="ev-title">Tests de raisonnement
+        <section class="reasoning" [attr.aria-label]="'Tests de raisonnement' | t">
+          <h4 class="ev-title">{{ 'Tests de raisonnement' | t }}
             @if (claim.reasoning_adjustment && claim.score_before_reasoning !== null) {
-            <span class="muted adj">score {{ formatScore(claim.score_before_reasoning) }} → {{ formatScore(claim.truth_score) }}
-              ({{ signed(claim.reasoning_adjustment) }})</span>
+            <span class="muted adj">{{ 'score {avant} → {apres} ({delta})' | t: { avant: formatScore(claim.score_before_reasoning), apres: formatScore(claim.truth_score), delta: signed(claim.reasoning_adjustment) } }}</span>
             }
           </h4>
           @for (t of shownTests(claim); track t.kind) {
           <div class="test" [class]="'o-' + t.outcome">
             <div class="test-head">
               <span class="chip-icon tone-grey sm"><app-icon [name]="reasoningIcon[t.kind]" [size]="15" /></span>
-              <strong>{{ t.label }}</strong>
+              <strong>{{ t.label | t }}</strong>
               @if (t.kind !== 'sophisme') {
               <span class="badge" [class]="outcomeTone(t.outcome)">{{ outcomeLabel[t.outcome] }}</span>
               }
@@ -233,7 +208,7 @@
               } }
             </p>
             }
-            @if (t.effect) { <p class="t-eff muted">Effet sur le score : {{ t.effect }}</p> }
+            @if (t.effect) { <p class="t-eff muted">{{ 'Effet sur le score : {effet}' | t: { effet: t.effect } }}</p> }
           </div>
           }
         </section>
@@ -241,7 +216,7 @@
         <div class="args">
           @if (claim.arguments_for.length) {
           <div class="arg-col for">
-            <h4><app-icon name="check" [size]="16" />Ce qui confirme</h4>
+            <h4><app-icon name="check" [size]="16" />{{ 'Ce qui confirme' | t }}</h4>
             <ul>
               @for (arg of claim.arguments_for; track $index) {
               <li>
@@ -259,7 +234,7 @@
           </div>
           } @if (claim.arguments_against.length) {
           <div class="arg-col against">
-            <h4><app-icon name="close" [size]="16" />Ce qui contredit</h4>
+            <h4><app-icon name="close" [size]="16" />{{ 'Ce qui contredit' | t }}</h4>
             <ul>
               @for (arg of claim.arguments_against; track $index) {
               <li>
@@ -284,8 +259,8 @@
               ><app-icon name="chart" [size]="18"
             /></span>
             <div class="stat-name">
-              <strong>{{ s.indicator_name }}</strong
-              ><small>{{ s.country }}, {{ s.unit }}</small>
+              <strong>{{ s.indicator_name | t }}</strong
+              ><small>{{ s.country }}, {{ s.unit | t }}</small>
             </div>
             <span class="badge" [class]="stanceTone(s.stance)"
               >{{ stanceLabel[s.stance] }}</span
@@ -294,7 +269,7 @@
           <div class="stat-body">
             <div class="stat-value">
               {{ formatNumber(s.latest_value) }}<small
-                >{{ isEstimate(s, s.latest_year) ? 'estimation' : 'donnée' }} {{ s.latest_year }}</small
+                >{{ isEstimate(s, s.latest_year) ? 'estimation' : ('donnée' | t) }} {{ s.latest_year }}</small
               >
             </div>
             @if (sparkline(s)) {
@@ -311,7 +286,7 @@
           </div>
           @if (s.series.length > 1) {
           <table class="series">
-            <caption class="visually-hidden">Série {{ s.indicator_name }}</caption>
+            <caption class="visually-hidden">{{ 'Série {nom}' | t: { nom: s.indicator_name } }}</caption>
             <tr>
               @for (pt of s.series.slice(-6); track pt.year) {
               <th scope="col" [class.est]="isEstimate(s, pt.year)">{{ pt.year }}@if (isEstimate(s, pt.year)) {*}</th>
@@ -324,15 +299,14 @@
             </tr>
           </table>
           @if (s.estimate_from_year) {
-          <p class="muted">* estimation ou prévision du FMI, révisée à chaque édition du World Economic Outlook.</p>
+          <p class="muted">{{ '* estimation ou prévision du FMI, révisée à chaque édition du World Economic Outlook.' | t }}</p>
           } } @if (statAge(s) >= 2) {
           <p class="stat-line warn-line">
-            <app-icon name="alert" [size]="14" /> Dernière donnée publiée : {{ s.latest_year }}. Vérifiez auprès
-            de l’INSTAT si un chiffre plus récent existe.
+            <app-icon name="alert" [size]="14" /> {{ 'Dernière donnée publiée : {annee}. Vérifiez auprès de l’INSTAT si un chiffre plus récent existe.' | t: { annee: s.latest_year } }}
           </p>
           } @if (s.claimed_value) {
           <p class="stat-line">
-            Valeur annoncée dans le contenu :
+            {{ 'Valeur annoncée dans le contenu :' | t }}
             <strong>{{ s.claimed_value }}</strong>
           </p>
           } @if (s.comment) {
@@ -340,17 +314,17 @@
           }
           <p class="stat-source">
             <a [href]="s.source_url" target="_blank" rel="noopener"
-              >{{ s.source_name }} <app-icon name="external" [size]="12" /></a
+              >{{ s.source_name | t }} <app-icon name="external" [size]="12" /></a
             >
             @if (s.last_updated) {
             <span class="muted"
-              >base mise à jour le {{ s.last_updated | date: 'longDate' }}</span
+              >{{ 'base mise à jour le {date}' | t: { date: s.last_updated | date: 'longDate' } }}</span
             >
             }
           </p>
         </div>
         } @if (claim.evidence.length) {
-        <h4 class="ev-title">Preuves ({{ claim.evidence.length }})</h4>
+        <h4 class="ev-title">{{ 'Preuves ({n})' | t: { n: claim.evidence.length } }}</h4>
         <ul class="evidence">
           @for (e of claim.evidence; track e.id) {
           <li class="ev" [id]="anchor(claim, e.id)">
@@ -369,9 +343,9 @@
                 <span class="ref static">{{ e.id }}</span>
                 <span class="pub">{{ e.publisher }}</span>
                 @if (e.official) {
-                <span class="badge good tag-off"><app-icon name="shield" [size]="13" />Source officielle</span>
+                <span class="badge good tag-off"><app-icon name="shield" [size]="13" />{{ 'Source officielle' | t }}</span>
                 } @else if (e.origin === 'community') {
-                <span class="badge neutral tag-off"><app-icon name="feed" [size]="13" />Fil média</span>
+                <span class="badge neutral tag-off"><app-icon name="feed" [size]="13" />{{ 'Fil média' | t }}</span>
                 }
                 <span class="badge" [class]="stanceTone(e.stance)"
                   >{{ stanceLabel[e.stance] }}</span
@@ -391,10 +365,10 @@
               <p class="just">{{ e.justification }}</p>
               }
               <p class="ev-meta">
-                <span>{{ e.category }}</span>
-                <span [title]="e.reliability_reasons.join(' · ')">Fiabilité {{ pct(e.reliability) }}</span>
-                <span>{{ e.published_at ? 'Publié le ' + (e.published_at.slice(0, 10) | date: 'd MMM y') : 'Date de publication inconnue' }}</span>
-                @if (e.found_via) { <span>Trouvé via {{ e.found_via }}</span> }
+                <span>{{ e.category | t }}</span>
+                <span [title]="e.reliability_reasons.join(' · ')">{{ 'Fiabilité {p}' | t: { p: pct(e.reliability) } }}</span>
+                <span>{{ e.published_at ? ('Publié le {date}' | t: { date: e.published_at.slice(0, 10) | date: 'd MMM y' }) : ('Date de publication inconnue' | t) }}</span>
+                @if (e.found_via) { <span>{{ 'Trouvé via {outil}' | t: { outil: e.found_via | t } }}</span> }
               </p>
             </div>
           </li>
@@ -402,12 +376,11 @@
         </ul>
         } @else {
         <p class="muted no-ev">
-          Aucune preuve exploitable n’a été trouvée pour cette affirmation :
-          elle reste non vérifiable.
+          {{ 'Aucune preuve exploitable n’a été trouvée pour cette affirmation : elle reste non vérifiable.' | t }}
         </p>
         } @if (claim.contacts.length) {
         <div class="contacts">
-          <h4 class="ev-title"><app-icon name="users" [size]="16" />Qui contacter pour confirmer</h4>
+          <h4 class="ev-title"><app-icon name="users" [size]="16" />{{ 'Qui contacter pour confirmer' | t }}</h4>
           <ul>
             @for (c of claim.contacts; track c.id) {
             <li class="contact">
@@ -417,29 +390,29 @@
               </div>
               <div class="c-links">
                 @if (c.website) {
-                <a [href]="c.website" target="_blank" rel="noopener"><app-icon name="globe" [size]="14" />Site officiel</a>
+                <a [href]="c.website" target="_blank" rel="noopener"><app-icon name="globe" [size]="14" />{{ 'Site officiel' | t }}</a>
                 } @for (t of tel(c.phone); track t.href) {
-                <a [href]="t.href"><app-icon name="audio" [size]="14" />{{ t.label }}</a>
+                <a [href]="t.href"><app-icon name="audio" [size]="14" />{{ t.label | t }}</a>
                 } @if (c.email) {
                 <a [href]="'mailto:' + c.email"><app-icon name="send" [size]="14" />{{ c.email }}</a>
                 }
               </div>
               @if (c.address) { <span class="muted">{{ c.address }}</span> }
-              @if (c.verified_at) { <span class="muted">Coordonnées vérifiées le {{ c.verified_at | date: 'd MMM y' }}</span> }
+              @if (c.verified_at) { <span class="muted">{{ 'Coordonnées vérifiées le {date}' | t: { date: c.verified_at | date: 'd MMM y' } }}</span> }
             </li>
             }
           </ul>
-          <a class="muted" routerLink="/sources">Voir l’annuaire des sources officielles</a>
+          <a class="muted" routerLink="/sources">{{ 'Voir l’annuaire des sources officielles' | t }}</a>
         </div>
         }
       </article>
       } @empty {
       <p class="card muted">
-        Aucune affirmation vérifiable n’a été identifiée dans ce contenu.
+        {{ 'Aucune affirmation vérifiable n’a été identifiée dans ce contenu.' | t }}
       </p>
       } @if (r.excluded_sources.length) {
       <details class="card fold">
-        <summary>Sources écartées ({{ r.excluded_sources.length }})</summary>
+        <summary>{{ 'Sources écartées ({n})' | t: { n: r.excluded_sources.length } }}</summary>
         <ul class="plain">
           @for (x of r.excluded_sources; track x.url) {
           <li>
@@ -452,20 +425,51 @@
       } @if (r.article; as art) {
       <section class="card article" id="article">
         <div class="article-head">
-          <h2 class="section-title">Article prêt à publier</h2>
-          <span class="badge neutral"
-            >{{ art.generated_by === 'llm' ? 'Rédigé par IA, à relire' : 'Modèle
-            automatique' }}</span
-          >
+          <div>
+            <h2 class="section-title">{{ 'Article suggéré' | t }}</h2>
+            <p class="muted small">
+              {{ art.edited ? ('Relu et modifié' | t) : art.generated_by === 'llm' ? ('Rédigé par IA à partir des preuves : à relire avant publication' | t) : ('Modèle automatique : à relire et compléter' | t) }}
+            </p>
+          </div>
+          <div class="tabs" role="tablist" [attr.aria-label]="'Format' | t">
+            <button type="button" role="tab" [class.on]="artView() === 'article'" [attr.aria-selected]="artView() === 'article'" (click)="artView.set('article')">{{ 'Article' | t }}</button>
+            <button type="button" role="tab" [class.on]="artView() === 'court'" [attr.aria-selected]="artView() === 'court'" (click)="artView.set('court')">{{ 'Publication courte' | t }}</button>
+          </div>
         </div>
+
+        @if (editing(); as d) {
+        <div class="art-edit">
+          <label class="field-label" for="art-title">{{ 'Titre' | t }}</label>
+          <input id="art-title" class="input" [value]="d.title" (input)="patchDraft('title', $event)" maxlength="200">
+          <label class="field-label" for="art-lead">{{ 'Chapô' | t }}</label>
+          <textarea id="art-lead" class="input" rows="2" [value]="d.lead" (input)="patchDraft('lead', $event)" maxlength="800"></textarea>
+          <label class="field-label" for="art-points">{{ 'L’essentiel (une idée par ligne)' | t }}</label>
+          <textarea id="art-points" class="input" rows="4" [value]="d.key_points.join('\n')" (input)="patchPoints($event)"></textarea>
+          <label class="field-label" for="art-body">{{ 'Corps de l’article (Markdown, références [n] vers les sources)' | t }}</label>
+          <textarea id="art-body" class="input mono" rows="16" [value]="d.body_markdown" (input)="patchDraft('body_markdown', $event)" maxlength="20000"></textarea>
+          <label class="field-label" for="art-social">{{ 'Publication courte pour le fil' | t }}</label>
+          <textarea id="art-social" class="input" rows="5" [value]="d.social_post" (input)="patchDraft('social_post', $event)" maxlength="2000"></textarea>
+          <div class="art-actions">
+            <button type="button" class="btn btn-primary btn-sm" (click)="saveArticle()" [disabled]="savingArticle() || !d.title.trim() || !d.body_markdown.trim()">
+              <app-icon name="check" [size]="16" />{{ savingArticle() ? ('Enregistrement…' | t) : ('Enregistrer' | t) }}
+            </button>
+            <button type="button" class="btn btn-sm" (click)="editing.set(null)">{{ 'Annuler' | t }}</button>
+          </div>
+        </div>
+        } @else if (artView() === 'article') {
         <h3 class="art-title">{{ art.title }}</h3>
         <p class="lead">{{ art.lead }}</p>
-        <div
-          class="art-body"
-          [innerHTML]="art.body_markdown | markdown: art.sources.length"
-        ></div>
+        @if (art.key_points?.length) {
+        <div class="essentials">
+          <h4>{{ 'L’essentiel' | t }}</h4>
+          <ul>
+            @for (k of art.key_points; track $index) { <li>{{ k }}</li> }
+          </ul>
+        </div>
+        }
+        <div class="art-body" [innerHTML]="art.body_markdown | markdown: art.sources.length"></div>
         @if (art.sources.length) {
-        <h4 class="src-title">Sources</h4>
+        <h4 class="src-title">{{ 'Sources' | t }}</h4>
         <ol class="sources">
           @for (s of art.sources; track s.n) {
           <li>
@@ -475,39 +479,70 @@
           }
         </ol>
         }
+        } @else {
+        <div class="social-preview">
+          <p class="body">{{ art.social_post || art.title + '\n\n' + art.lead }}</p>
+          <span class="muted small">{{ '{n} caractères · l’analyse complète est jointe automatiquement' | t: { n: (art.social_post || '').length } }}</span>
+        </div>
+        }
+
+        @if (publishing(); as pub) {
+        <div class="publish-box" id="publish-box">
+          <div class="pb-head">
+            <h4>{{ 'Publier sur le fil média' | t }}</h4>
+            <div class="tabs">
+              <button type="button" [class.on]="pub.format === 'article'" (click)="setPublishFormat('article')">{{ 'Article complet' | t }}</button>
+              <button type="button" [class.on]="pub.format === 'court'" (click)="setPublishFormat('court')">{{ 'Publication courte' | t }}</button>
+            </div>
+          </div>
+          <label class="visually-hidden" for="pub-body">{{ 'Texte publié' | t }}</label>
+          <textarea id="pub-body" class="input" [class.mono]="pub.format === 'article'" [rows]="pub.format === 'article' ? 12 : 6"
+                    [value]="pub.body" (input)="patchPublish($event)" maxlength="20000"></textarea>
+          <p class="muted small">{{ 'La carte de l’analyse (score, verdict, preuves) est attachée à la publication. Vous pourrez la modifier depuis le fil.' | t }}</p>
+          <div class="art-actions">
+            <button type="button" class="btn btn-primary btn-sm" (click)="publish()" [disabled]="pub.busy || !pub.body.trim()">
+              <app-icon name="send" [size]="16" />{{ pub.busy ? ('Publication…' | t) : ('Publier maintenant' | t) }}
+            </button>
+            <button type="button" class="btn btn-sm" (click)="publishing.set(null)">{{ 'Annuler' | t }}</button>
+          </div>
+        </div>
+        } @else if (!editing()) {
         <div class="art-actions">
-          <button
-            type="button"
-            class="btn btn-primary btn-sm"
-            (click)="copyArticle(art)"
-          >
-            <app-icon name="copy" [size]="16" />Copier
-          </button>
-          <a class="btn btn-sm" [href]="downloadUrl('md')" download
-            ><app-icon name="download" [size]="16" />Markdown</a
-          >
-          <a class="btn btn-sm" [href]="downloadUrl('html')" download
-            ><app-icon name="download" [size]="16" />HTML</a
-          >
           @if (analysis()?.editable) {
-          <button
-            type="button"
-            class="btn btn-outline btn-sm"
-            (click)="regenerate()"
-            [disabled]="regenerating()"
-          >
-            <app-icon name="refresh" [size]="16" />{{ regenerating() ?
-            'Rédaction…' : 'Rédiger à nouveau' }}
+          <button type="button" class="btn btn-primary btn-sm" (click)="openPublish(artView())">
+            <app-icon name="feed" [size]="16" />{{ 'Publier sur le fil' | t }}
+          </button>
+          <button type="button" class="btn btn-sm" (click)="startEdit(art)">
+            <app-icon name="edit" [size]="16" />{{ 'Modifier' | t }}
+          </button>
+          }
+          <button type="button" class="btn btn-sm" (click)="copyArticle(art)">
+            <app-icon name="copy" [size]="16" />{{ 'Copier' | t }}
+          </button>
+          <a class="btn btn-sm" [href]="downloadUrl('md')" download><app-icon name="download" [size]="16" />{{ 'Markdown' | t }}</a>
+          <a class="btn btn-sm" [href]="downloadUrl('html')" download><app-icon name="download" [size]="16" />{{ 'HTML' | t }}</a>
+          @if (analysis()?.editable) {
+          <button type="button" class="btn btn-outline btn-sm" (click)="regenerate()" [disabled]="regenerating()">
+            <app-icon name="refresh" [size]="16" />{{ regenerating() ? ('Rédaction…' | t) : ('Nouvelle suggestion' | t) }}
           </button>
           }
         </div>
+        }
+        @if (publishedPost(); as pid) {
+        <p class="published"><app-icon name="check" [size]="16" />{{ 'Publié sur le fil.' | t }} <a [routerLink]="['/publication', pid]">{{ 'Voir la publication' | t }}</a></p>
+        }
       </section>
+      } @if (a.events.length) {
+      <details class="card fold">
+        <summary>{{ 'Journal des agents ({n} étapes)' | t: { n: a.events.length } }}</summary>
+        <app-agent-progress [analysis]="a" mode="log" />
+      </details>
       } @if (r.warnings.length || toolsLabel().length) {
       <details class="card fold">
-        <summary>Limites de cette analyse</summary>
+        <summary>{{ 'Limites de cette analyse' | t }}</summary>
         @if (toolsLabel().length) {
         <p class="tools">
-          Sources interrogées : @for (t of toolsLabel(); track t) {
+          {{ 'Sources interrogées :' | t }} @for (t of toolsLabel(); track t) {
           <span class="badge neutral">{{ t }}</span> }
         </p>
         }

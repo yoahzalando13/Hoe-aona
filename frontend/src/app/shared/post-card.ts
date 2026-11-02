@@ -4,12 +4,14 @@ import { RouterLink } from '@angular/router';
 import { Api, errorMessage } from '../core/api';
 import { avatarTone, initials, kindIcon, relativeTime, verdictLabel } from '../core/format';
 import { Comment, Post } from '../core/models';
+import { MarkdownPipe } from '../core/markdown';
 import { Icon } from './icon';
 import { ScoreRing } from './score-ring';
+import { PluralPipe, TPipe } from '../core/i18n';
 
 @Component({
   selector: 'app-post-card',
-  imports: [FormsModule, RouterLink, Icon, ScoreRing],
+  imports: [FormsModule, RouterLink, Icon, ScoreRing, MarkdownPipe, TPipe, PluralPipe],
   templateUrl: './post-card.html',
   styleUrl: './post-card.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -28,6 +30,17 @@ export class PostCard {
   protected readonly relativeTime = relativeTime;
   protected readonly verdictLabel = verdictLabel;
   protected readonly kindIcon = kindIcon;
+
+  protected readonly expanded = signal(false);
+
+  /** Article publié depuis une analyse : titres Markdown, rendu enrichi et repliable. */
+  protected isArticle(body: string): boolean {
+    return /^#\s/.test(body) || /\n##\s/.test(body);
+  }
+
+  protected isLong(body: string): boolean {
+    return body.length > 700;
+  }
 
   protected readonly showComments = signal(false);
   protected readonly comments = signal<Comment[] | null>(null);

@@ -25,7 +25,7 @@
   --radius-m: 18px;
   --radius-s: 12px;
   --gradient: linear-gradient(100deg, var(--indigo) 0%, var(--violet) 55%, var(--teal) 100%);
-  --nav-h: 76px;
+  --nav-h: 72px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   color-scheme: light;
 }
@@ -51,6 +51,8 @@ img { max-width: 100%; }
 /* Mise en page des pages */
 .page { max-width: 760px; margin: 0 auto; padding: 16px 20px calc(var(--nav-h) + 32px + var(--safe-b)); }
 .page-wide { max-width: 1180px; }
+/* À partir de 600 px la navigation devient un rail latéral : plus de barre en bas à éviter. */
+@media (min-width: 600px) { :root { --nav-h: 0px; --safe-b: 0px; } }
 @media (min-width: 900px) { .page { padding: 32px 40px 48px; } }
 
 .appbar { display: flex; align-items: center; gap: 8px; min-height: 48px; margin-bottom: 8px; }

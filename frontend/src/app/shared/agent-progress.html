@@ -1,0 +1,74 @@
+@let a = analysis();
+@if (mode() === 'live') {
+<div class="head">
+  <div>
+    <h2>{{ running() ? ('Analyse en cours' | t) : ('Analyse terminée' | t) }}</h2>
+    <p class="muted step">{{ a.step || ('En attente d’un agent disponible' | t) }}</p>
+  </div>
+  <div class="pct">
+    <strong>{{ a.progress }} %</strong>
+    <span class="muted"><app-icon name="clock" [size]="13" />{{ seconds(elapsed()) }}
+      @if (remaining(); as r) { · {{ 'reste ~{duree}' | t: { duree: seconds(r) } }} }</span>
+  </div>
+</div>
+<div class="bar" role="progressbar" [attr.aria-valuenow]="a.progress" aria-valuemin="0" aria-valuemax="100"
+     [attr.aria-label]="'Avancement de l’analyse' | t">
+  <i [style.width.%]="a.progress"></i>
+</div>
+
+<div class="counters">
+  <span><b>{{ claimsFound() }}</b> {{ claimsFound() > 1 ? ('affirmations' | t) : ('affirmation' | t) }}</span>
+  <span><b>{{ toolStats().total }}</b> {{ toolStats().total > 1 ? ('appels d’outils' | t) : ('appel d’outils' | t) }}</span>
+  @if (toolStats().active) { <span class="live"><b>{{ toolStats().active }}</b> {{ 'en cours' | t }}</span> }
+  @if (toolStats().failed) { <span class="warn"><b>{{ toolStats().failed }}</b> {{ toolStats().failed > 1 ? ('indisponibles' | t) : ('indisponible' | t) }}</span> }
+</div>
+
+<ol class="team" [attr.aria-label]="'Agents de l’analyse' | t">
+  @for (ag of agents; track ag.key) {
+  @let st = state(ag);
+  <li class="agent" [class]="st">
+    <span class="avatar"><app-icon [name]="ag.icon" [size]="17" />
+      @if (st === 'done') { <span class="tick"><app-icon name="check" [size]="10" /></span> }
+    </span>
+    <span class="who">
+      <span class="name">{{ ag.name }}
+        <span class="state">{{ st === 'working' ? ('au travail' | t) : st === 'done' ? ('terminé' | t) : st === 'error' ? ('en échec' | t) : ('en attente' | t) }}</span>
+      </span>
+      <span class="act">{{ activity(ag) }}</span>
+    </span>
+  </li>
+  }
+</ol>
+}
+
+<div class="log-head">
+  <h3>{{ 'Journal des agents' | t }}</h3>
+  @if (mode() === 'live' && !follow()) {
+    <button type="button" class="btn btn-sm" (click)="follow.set(true)">{{ 'Suivre en direct' | t }}</button>
+  }
+</div>
+@if (events().length) {
+<ol class="log" #logBox (scroll)="onScroll($event)" [class.tall]="mode() === 'log'" aria-live="polite">
+  @for (e of events(); track trackEvent($index, e)) {
+  <li class="ev" [class]="e.status" [class.sub]="!!e.tool">
+    <span class="t">{{ stamp(e) }}</span>
+    <span class="ic">
+      @switch (e.status) {
+        @case ('running') { <span class="spin" [attr.aria-label]="'en cours' | t"></span> }
+        @case ('done') { <app-icon name="check" [size]="13" /> }
+        @case ('error') { <app-icon name="alert" [size]="13" /> }
+        @default { <app-icon [name]="agentIcon(e.agent)" [size]="13" /> }
+      }
+    </span>
+    <span class="txt">
+      <span class="ag">{{ agentName(e.agent) }}</span>
+      <span class="msg">{{ e.message }}</span>
+      @if (e.detail) { <span class="det">{{ e.detail }}</span> }
+    </span>
+    @if (e.duration) { <span class="dur">{{ e.duration.toFixed(1).replace('.', ',') }} s</span> }
+  </li>
+  }
+</ol>
+} @else {
+<p class="muted empty">{{ 'Les agents démarrent…' | t }}</p>
+}

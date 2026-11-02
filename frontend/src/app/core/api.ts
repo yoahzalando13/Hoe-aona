@@ -1,9 +1,10 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
-  AdminUser, AnalysisOut, AnalysisPage, AnalysisStats, AnalysisUpdate, Article, AuthConfig, Comment, Health,
-  OfficialSource, OfficialSourceIn, PlatformStats, Post, PostPage, Preferences, PublicUser, Role, User, Workflow,
+  AdminUser, AnalysisOut, AnalysisPage, AnalysisStats, AnalysisUpdate, Article, ArticleEdit, AuthConfig, Comment, Health,
+  OfficialSource, OfficialSourceIn, PlatformStats, Post, PostPage, Preferences, PublicUser, Role, StatCatalog, StatSeries, StatSeriesPair, User, Workflow,
 } from './models';
+import { t } from './i18n';
 
 @Injectable({ providedIn: 'root' })
 export class Api {
@@ -49,6 +50,15 @@ export class Api {
 
   regenerateArticle(id: string) {
     return this.http.post<Article>(`${this.base}/analyses/${id}/article`, {});
+  }
+
+  editArticle(id: string, article: ArticleEdit) {
+    return this.http.put<Article>(`${this.base}/analyses/${id}/article`, article);
+  }
+
+  /** Publie l'article complet ou sa version courte sur le fil, avec un texte éventuellement retouché. */
+  publishArticle(id: string, format: 'article' | 'court', body?: string) {
+    return this.http.post<Post>(`${this.base}/analyses/${id}/publish`, { format, body: body ?? null });
   }
 
   articleUrl(id: string, format: 'md' | 'html') {
@@ -121,6 +131,16 @@ export class Api {
   updateSource(id: string, s: OfficialSourceIn) { return this.http.put<OfficialSource>(`${this.base}/sources/${id}`, s); }
   deleteSource(id: string) { return this.http.delete<void>(`${this.base}/sources/${id}`); }
 
+  // ---------- statistiques ----------
+  statsCatalog() { return this.http.get<StatCatalog>(`${this.base}/stats/catalog`); }
+  statsSeries(indicator: string, country: string, years = 20) {
+    return this.http.get<StatSeriesPair>(`${this.base}/stats/series`, { params: { indicator, country, years } });
+  }
+  statsCompare(indicator: string, countries: string[]) {
+    return this.http.get<StatSeries[]>(`${this.base}/stats/compare`, { params: { indicator, countries: countries.join(',') } });
+  }
+  statsMadagascar() { return this.http.get<StatSeries[]>(`${this.base}/stats/madagascar`); }
+
   // ---------- administration ----------
   adminStats() { return this.http.get<PlatformStats>(`${this.base}/admin/stats`); }
   adminAnalysisStats() { return this.http.get<AnalysisStats>(`${this.base}/admin/analyses/stats`); }
@@ -143,8 +163,8 @@ export class Api {
 export function errorMessage(err: unknown): string {
   const e = err as { status?: number; error?: { detail?: unknown } };
   const detail = e?.error?.detail;
-  if (typeof detail === 'string') return detail;
-  if (Array.isArray(detail) && detail.length) return String((detail[0] as { msg?: string }).msg ?? 'Requête invalide');
-  if (e?.status === 0) return 'Serveur injoignable : vérifiez que le backend est démarré.';
-  return 'Une erreur est survenue. Réessayez dans un instant.';
+  if (typeof detail === 'string') return t(detail);
+  if (Array.isArray(detail) && detail.length) return String((detail[0] as { msg?: string }).msg ?? t('Requête invalide'));
+  if (e?.status === 0) return t('Serveur injoignable : vérifiez que le backend est démarré.');
+  return t('Une erreur est survenue. Réessayez dans un instant.');
 }

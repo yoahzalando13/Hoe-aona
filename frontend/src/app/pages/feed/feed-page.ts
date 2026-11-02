@@ -7,13 +7,14 @@ import { avatarTone, initials, verdictLabel } from '../../core/format';
 import { AnalysisListItem, Post } from '../../core/models';
 import { Icon } from '../../shared/icon';
 import { PostCard } from '../../shared/post-card';
+import { TPipe, t } from '../../core/i18n';
 
 const PAGE_SIZE = 15;
 const MAX_IMAGE = 8 * 1024 * 1024;
 
 @Component({
   selector: 'app-feed-page',
-  imports: [FormsModule, RouterLink, Icon, PostCard],
+  imports: [FormsModule, RouterLink, Icon, PostCard, TPipe],
   templateUrl: './feed-page.html',
   styleUrl: './feed-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -108,8 +109,8 @@ export class FeedPage {
     const file = el.files?.[0] ?? null;
     el.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) { this.composeError.set('Choisissez un fichier image.'); return; }
-    if (file.size > MAX_IMAGE) { this.composeError.set('Image trop lourde (8 Mo maximum).'); return; }
+    if (!file.type.startsWith('image/')) { this.composeError.set(t('Choisissez un fichier image.')); return; }
+    if (file.size > MAX_IMAGE) { this.composeError.set(t('Image trop lourde (8 Mo maximum).')); return; }
     this.composeError.set(null);
     this.revokePreview();
     this.image.set(file);
@@ -142,7 +143,7 @@ export class FeedPage {
         this.clearImage();
         this.clearAnalysis();
         this.publishing.set(false);
-        this.flash('Publication partagée');
+        this.flash(t('Publication partagée'));
       },
       error: (err) => { this.composeError.set(errorMessage(err)); this.publishing.set(false); },
     });

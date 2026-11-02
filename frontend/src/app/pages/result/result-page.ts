@@ -7,21 +7,13 @@ import {
   STANCE_LABEL, claimTone, formatNumber, formatScore, kindIcon, pct, relativeTime, scoreTone, stanceTone, toneColor,
 } from '../../core/format';
 import { MarkdownPipe } from '../../core/markdown';
-import { AnalysisOut, Article, Claim, Criterion, ReasoningKind, ReasoningOutcome, Statistic } from '../../core/models';
+import { AnalysisOut, Article, ArticleEdit, Claim, Criterion, ReasoningKind, ReasoningOutcome, Statistic } from '../../core/models';
+import { AgentProgress } from '../../shared/agent-progress';
 import { Icon } from '../../shared/icon';
 import { ScoreRing } from '../../shared/score-ring';
+import { TPipe, t } from '../../core/i18n';
 
 interface Segment { text: string; ref: string | null; }
-
-const STEPS = [
-  { at: 5, label: 'Lecture des données' },
-  { at: 20, label: 'Détection des signatures IA' },
-  { at: 30, label: 'Extraction des affirmations' },
-  { at: 45, label: 'Recherche de preuves (MCP)' },
-  { at: 75, label: 'Évaluation de la véracité' },
-  { at: 88, label: 'Calcul des scores' },
-  { at: 95, label: 'Rédaction de l’article' },
-];
 
 const CRITERION_ICON: Record<Criterion['key'], { icon: string; tone: string }> = {
   source: { icon: 'globe', tone: 'tone-blue' },
@@ -31,14 +23,14 @@ const CRITERION_ICON: Record<Criterion['key'], { icon: string; tone: string }> =
 
 const TOOL_LABELS: Record<string, string> = {
   wikipedia_search: 'Wikipedia',
-  news_search: 'GDELT', web_search: 'Tavily', worldbank_indicator: 'Banque mondiale', fetch_page: 'Lecture de pages',
-  news_madagascar: 'NewsData.io (presse malgache)', imf_indicator: 'FMI', platform_posts: 'Fil média Hoe-aona?',
+  news_search: 'GDELT', web_search: 'Tavily', worldbank_indicator: t('Banque mondiale'), fetch_page: t('Lecture de pages'),
+  news_madagascar: t('NewsData.io (presse malgache)'), imf_indicator: t('FMI'), platform_posts: t('Fil média Hoe-aona?'),
   detect_ai_image: 'Sightengine',
 };
 
 @Component({
   selector: 'app-result-page',
-  imports: [Icon, ScoreRing, MarkdownPipe, RouterLink, DatePipe],
+  imports: [Icon, ScoreRing, MarkdownPipe, RouterLink, DatePipe, AgentProgress, TPipe],
   templateUrl: './result-page.html',
   styleUrl: './result-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,9 +49,13 @@ export class ResultPage {
   protected readonly regenerating = signal(false);
   protected readonly notice = signal<string | null>(null);
   protected readonly openDetails = signal<ReadonlySet<string>>(new Set());
+  protected readonly artView = signal<'article' | 'court'>('article');
+  protected readonly editing = signal<ArticleEdit | null>(null);
+  protected readonly savingArticle = signal(false);
+  protected readonly publishing = signal<{ format: 'article' | 'court'; body: string; busy: boolean } | null>(null);
+  protected readonly publishedPost = signal<string | null>(null);
 
   protected readonly result = computed(() => this.analysis()?.result ?? null);
-  protected readonly steps = STEPS;
   protected readonly stanceLabel = STANCE_LABEL;
   protected readonly criterionIcon = CRITERION_ICON;
   protected readonly formatScore = formatScore;
@@ -73,7 +69,7 @@ export class ResultPage {
   protected readonly inputsLabel = computed(() => {
     const inputs = this.result()?.inputs ?? [];
     if (!inputs.length) return this.analysis()?.title ?? '';
-    const first = inputs[0].kind === 'text' ? 'Texte saisi' : inputs[0].name;
+    const first = inputs[0].kind === 'text' ? t('Texte saisi') : inputs[0].name;
     return inputs.length > 1 ? `${first} + ${inputs.length - 1} autre${inputs.length > 2 ? 's' : ''}` : first;
   });
   protected readonly inputsIcon = computed(() => kindIcon(this.analysis()?.input_kind ?? 'text'));
@@ -115,13 +111,6 @@ export class ResultPage {
         next: (a) => { this.analysis.set(a); this.loading.set(false); },
         error: (err) => { this.loadError.set(errorMessage(err)); this.loading.set(false); },
       });
-  }
-
-  protected stepState(at: number, progress: number): 'done' | 'current' | 'todo' {
-    const next = STEPS.find((s) => s.at > at)?.at ?? 100;
-    if (progress >= next) return 'done';
-    if (progress >= at) return 'current';
-    return 'todo';
   }
 
   protected toggleDetails(key: string): void {
@@ -184,7 +173,7 @@ export class ResultPage {
     const data = { title: `Hoe-aona? : ${r.verdict_label}`, text: `${a.title} : ${formatScore(r.global_score)}/10`, url: location.href };
     try {
       if (navigator.share) await navigator.share(data);
-      else { await navigator.clipboard.writeText(data.url); this.flash('Lien copié'); }
+      else { await navigator.clipboard.writeText(data.url); this.flash(t('Lien copié')); }
     } catch { /* partage annulé */ }
   }
 
@@ -194,15 +183,95 @@ export class ResultPage {
 
   private markdown(article: Article): string {
     const sources = article.sources.map((s) => `${s.n}. [${s.title}](${s.url}) — ${s.publisher}`).join('\n');
-    return `# ${article.title}\n\n*${article.lead}*\n\n${article.body_markdown}\n\n## Sources\n\n${sources}\n`;
+    const points = article.key_points?.length
+      ? `## L’essentiel\n\n${article.key_points.map((p) => `- ${p}`).join('\n')}\n\n` : '';
+    return `# ${article.title}\n\n*${article.lead}*\n\n${points}${article.body_markdown}\n\n## Sources\n\n${sources}\n`;
+  }
+
+  private shortPost(article: Article): string {
+    return article.social_post || `${article.title}\n\n${article.lead}`;
+  }
+
+  // ---------- Article suggéré : relecture et publication ----------
+  protected startEdit(article: Article): void {
+    this.publishing.set(null);
+    this.editing.set({
+      title: article.title, lead: article.lead, body_markdown: article.body_markdown,
+      key_points: [...(article.key_points ?? [])], social_post: article.social_post ?? '',
+    });
+  }
+
+  protected patchDraft(field: 'title' | 'lead' | 'body_markdown' | 'social_post', event: Event): void {
+    const value = (event.target as HTMLInputElement | HTMLTextAreaElement).value;
+    this.editing.update((d) => (d ? { ...d, [field]: value } : d));
+  }
+
+  protected patchPoints(event: Event): void {
+    const lines = (event.target as HTMLTextAreaElement).value.split('\n');
+    this.editing.update((d) => (d ? { ...d, key_points: lines } : d));
+  }
+
+  protected saveArticle(): void {
+    const a = this.analysis();
+    const draft = this.editing();
+    if (!a?.result || !draft) return;
+    this.savingArticle.set(true);
+    this.api.editArticle(a.id, { ...draft, key_points: draft.key_points.map((p) => p.trim()).filter(Boolean) }).subscribe({
+      next: (article) => {
+        this.analysis.set({ ...a, result: { ...a.result!, article } });
+        this.savingArticle.set(false);
+        this.editing.set(null);
+        this.flash(t('Article enregistré'));
+      },
+      error: (err) => { this.savingArticle.set(false); this.flash(errorMessage(err)); },
+    });
+  }
+
+  protected openPublish(format: 'article' | 'court'): void {
+    const article = this.result()?.article;
+    if (!article) return;
+    this.editing.set(null);
+    this.publishedPost.set(null);
+    this.publishing.set({ format, body: format === 'article' ? this.markdown(article) : this.shortPost(article), busy: false });
+    setTimeout(() => this.scrollTo('publish-box'), 50);
+  }
+
+  protected setPublishFormat(format: 'article' | 'court'): void {
+    const article = this.result()?.article;
+    if (!article) return;
+    this.publishing.update((p) => p && { ...p, format, body: format === 'article' ? this.markdown(article) : this.shortPost(article) });
+  }
+
+  protected patchPublish(event: Event): void {
+    const body = (event.target as HTMLTextAreaElement).value;
+    this.publishing.update((p) => p && { ...p, body });
+  }
+
+  protected publish(): void {
+    const a = this.analysis();
+    const pub = this.publishing();
+    if (!a || !pub || pub.busy) return;
+    this.publishing.set({ ...pub, busy: true });
+    this.api.publishArticle(a.id, pub.format, pub.body).subscribe({
+      next: (post) => {
+        this.publishing.set(null);
+        this.publishedPost.set(post.id);
+        this.analysis.set({ ...a, workflow: 'publie' });
+        this.flash(t('Publié sur le fil média'));
+      },
+      error: (err) => {
+        this.publishing.update((p) => p && { ...p, busy: false });
+        this.flash(errorMessage(err));
+      },
+    });
   }
 
   protected async copyArticle(article: Article): Promise<void> {
     try {
       await navigator.clipboard.writeText(this.markdown(article));
-      this.flash('Article copié en Markdown');
+      this.flash(t('Article copié en Markdown'));
     } catch {
-      this.flash('Copie impossible : utilisez le téléchargement');
+      this.flash(t('Copie impossible : utilisez le téléchargement'));
     }
   }
 
@@ -212,10 +281,10 @@ export class ResultPage {
     contre_exemple: 'search', absurde: 'layers', ordre_de_grandeur: 'chart', coherence: 'check', sophisme: 'alert',
   };
   protected readonly outcomeLabel: Record<ReasoningOutcome, string> = {
-    refute: 'Réfute', affaiblit: 'Affaiblit', compatible: 'Compatible', non_concluant: 'Non concluant',
+    refute: t('Réfute'), affaiblit: t('Affaiblit'), compatible: t('Compatible'), non_concluant: t('Non concluant'),
   };
   protected readonly stepLabel: Record<string, string> = {
-    contredite: 'Démentie', compatible: 'Vérifiée', non_testable: 'Non testable',
+    contredite: t('Démentie'), compatible: t('Vérifiée'), non_testable: t('Non testable'),
   };
 
   protected outcomeTone(o: string): string {
@@ -259,7 +328,7 @@ export class ResultPage {
       next: (article) => {
         this.analysis.set({ ...a, result: { ...a.result!, article } });
         this.regenerating.set(false);
-        this.flash('Nouvel article rédigé');
+        this.flash(t('Nouvel article rédigé'));
       },
       error: (err) => { this.regenerating.set(false); this.flash(errorMessage(err)); },
     });

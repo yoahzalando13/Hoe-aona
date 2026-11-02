@@ -1,4 +1,5 @@
 import { ClaimVerdict, GlobalVerdict, Stance, Workflow } from './models';
+import { LOCALE, t } from './i18n';
 
 export type Tone = 'good' | 'mid' | 'bad' | 'neutral';
 
@@ -23,10 +24,10 @@ export function pct(value: number): string {
 }
 
 export const GLOBAL_VERDICTS: { key: GlobalVerdict; label: string; tone: Tone }[] = [
-  { key: 'fiable', label: 'Fiables', tone: 'good' },
-  { key: 'plutot_fiable', label: 'Plutôt fiables', tone: 'good' },
-  { key: 'a_verifier', label: 'À vérifier', tone: 'mid' },
-  { key: 'douteux', label: 'Douteuses', tone: 'bad' },
+  { key: 'fiable', label: t('Fiables'), tone: 'good' },
+  { key: 'plutot_fiable', label: t('Plutôt fiables'), tone: 'good' },
+  { key: 'a_verifier', label: t('À vérifier'), tone: 'mid' },
+  { key: 'douteux', label: t('Douteuses'), tone: 'bad' },
 ];
 
 export function claimTone(v: ClaimVerdict): Tone {
@@ -37,9 +38,9 @@ export function claimTone(v: ClaimVerdict): Tone {
 }
 
 export const STANCE_LABEL: Record<Stance, string> = {
-  supports: 'Confirme',
-  refutes: 'Contredit',
-  context: 'Contexte',
+  supports: t('Confirme'),
+  refutes: t('Contredit'),
+  context: t('Contexte'),
 };
 
 export function stanceTone(s: Stance): Tone {
@@ -49,7 +50,7 @@ export function stanceTone(s: Stance): Tone {
 export function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined) return 'n.d.';
   const abs = Math.abs(value);
-  const fmt = (n: number, d = 2) => n.toLocaleString('fr-FR', { maximumFractionDigits: d });
+  const fmt = (n: number, d = 2) => n.toLocaleString(LOCALE, { maximumFractionDigits: d });
   if (abs >= 1e9) return `${fmt(value / 1e9)} milliards`;
   if (abs >= 1e6) return `${fmt(value / 1e6)} millions`;
   return fmt(value, abs < 10 ? 2 : 1);
@@ -76,28 +77,28 @@ export function dayGroup(iso: string, now = new Date()): string {
   const d = new Date(iso);
   const start = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const days = Math.round((start(now) - start(d)) / 86_400_000);
-  if (days <= 0) return 'Aujourd’hui';
-  if (days === 1) return 'Hier';
-  if (days < 7) return 'Cette semaine';
-  if (days < 31) return 'Ce mois-ci';
-  return 'Plus ancien';
+  if (days <= 0) return t('Aujourd’hui');
+  if (days === 1) return t('Hier');
+  if (days < 7) return t('Cette semaine');
+  if (days < 31) return t('Ce mois-ci');
+  return t('Plus ancien');
 }
 
 export function relativeTime(iso: string, now = new Date()): string {
   const minutes = Math.round((now.getTime() - new Date(iso).getTime()) / 60000);
-  if (minutes < 1) return 'à l’instant';
-  if (minutes < 60) return `il y a ${minutes} min`;
+  if (minutes < 1) return t('à l’instant');
+  if (minutes < 60) return t('il y a {n} min', { n: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `il y a ${hours} h`;
-  return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
+  if (hours < 24) return t('il y a {n} h', { n: hours });
+  return new Date(iso).toLocaleDateString(LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export const WORKFLOWS: { key: Workflow; label: string; tone: string }[] = [
-  { key: 'a_traiter', label: 'À traiter', tone: 'tone-grey' },
-  { key: 'en_revue', label: 'En revue', tone: 'tone-amber' },
-  { key: 'valide', label: 'Validée', tone: 'tone-green' },
-  { key: 'publie', label: 'Publiée', tone: 'tone-blue' },
-  { key: 'archive', label: 'Archivée', tone: 'tone-purple' },
+  { key: 'a_traiter', label: t('À traiter'), tone: 'tone-grey' },
+  { key: 'en_revue', label: t('En revue'), tone: 'tone-amber' },
+  { key: 'valide', label: t('Validée'), tone: 'tone-green' },
+  { key: 'publie', label: t('Publiée'), tone: 'tone-blue' },
+  { key: 'archive', label: t('Archivée'), tone: 'tone-purple' },
 ];
 
 export function workflowLabel(w: Workflow): string {
@@ -106,9 +107,9 @@ export function workflowLabel(w: Workflow): string {
 
 export function verdictLabel(v: GlobalVerdict | null | undefined): string {
   const labels: Record<GlobalVerdict, string> = {
-    fiable: 'Fiable', plutot_fiable: 'Plutôt fiable', a_verifier: 'À vérifier', douteux: 'Douteux',
+    fiable: t('Fiable'), plutot_fiable: t('Plutôt fiable'), a_verifier: t('À vérifier'), douteux: t('Douteux'),
   };
-  return v ? labels[v] : 'Sans verdict';
+  return v ? labels[v] : t('Sans verdict');
 }
 
 export function initials(name: string): string {

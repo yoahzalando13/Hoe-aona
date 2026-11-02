@@ -1,4 +1,5 @@
-.auth { min-height: 100dvh; display: grid; place-items: center; padding: 24px 16px; }
+.auth { min-height: 100dvh; display: grid; place-items: center; align-content: center; gap: 14px; padding: 24px 16px; }
+.auth-lang { display: flex; justify-content: center; }
 .panel { width: 100%; max-width: 420px; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-l); padding: 28px 24px; display: flex; flex-direction: column; gap: 14px; }
 .brand { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 500; }
 h1 { font-size: 22px; letter-spacing: -0.3px; margin-top: 6px; }

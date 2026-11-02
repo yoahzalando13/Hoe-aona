@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import re
 from dataclasses import dataclass, field
+from typing import Awaitable, Callable
 
 from urllib.parse import urlparse
 
@@ -172,7 +173,27 @@ def _community_candidates(draft: ClaimDraft) -> list[Candidate]:
     return out[:3]
 
 
-async def gather(draft: ClaimDraft, gateway: ToolGateway, prefs: Preferences, settings: Settings) -> Collected:
+Reporter = Callable[[str, str, str, str], None]  # (clé, outil, "start" | "ok" | "error", détail)
+
+_PROBE_LABEL = {"counter": "contre-exemple", "implication": "conséquence (par l'absurde)"}
+
+
+async def _tracked(key: str, tool: str, detail: str, coro: Awaitable[dict], report: Reporter | None) -> dict:
+    if report:
+        report(key, tool, "start", detail)
+    result = await coro
+    if report:
+        if result.get("ok"):
+            n = len(result.get("items") or [])
+            report(key, tool, "ok", f"{n} résultat(s)")
+        else:
+            report(key, tool, "error", "ignoré (non configuré)" if result.get("skipped")
+                   else truncate(str(result.get("error", "échec")), 90))
+    return result
+
+
+async def gather(draft: ClaimDraft, gateway: ToolGateway, prefs: Preferences, settings: Settings,
+                 report: Reporter | None = None) -> Collected:
     collected = Collected()
     lang = draft.language if draft.language in {"fr", "en", "es", "pt", "de"} else "fr"  # malgache → wiki français
     local = madagascar.is_madagascar(f"{draft.text} {draft.search_query}", draft.country_iso3 or prefs.default_country)
@@ -205,10 +226,14 @@ async def gather(draft: ClaimDraft, gateway: ToolGateway, prefs: Preferences, se
         if draft.indicator_code in imf.FROM_WORLDBANK:
             calls["imf"] = gateway.call("imf_indicator", indicator=imf.FROM_WORLDBANK[draft.indicator_code],
                                         country=country)
-    results = dict(zip(calls, await asyncio.gather(*calls.values())))
     tool_of = {"wikipedia": "wikipedia_search", "news": "news_search", "web": "web_search", "web_mg": "web_search",
                "news_mg": "news_madagascar", "worldbank": "worldbank_indicator", "imf": "imf_indicator",
                **{f"probe{i}": "web_search" for i in range(len(probes))}}
+    call_detail = {"web_mg": "sites officiels et presse malgaches", "news_mg": "actualités de Madagascar",
+                   "worldbank": f"{draft.indicator_code} · {country}", "imf": f"estimations WEO · {country}",
+                   **{f"probe{i}": f"{_PROBE_LABEL[k]} : {truncate(q, 60)}" for i, (k, q, _) in enumerate(probes)}}
+    results = dict(zip(calls, await asyncio.gather(*(
+        _tracked(key, tool_of[key], call_detail.get(key, ""), coro, report) for key, coro in calls.items()))))
 
     candidates: dict[str, Candidate] = {}
 
@@ -285,7 +310,12 @@ async def gather(draft: ClaimDraft, gateway: ToolGateway, prefs: Preferences, se
     to_fetch = sorted((c for c in candidates.values() if not c.fetched),
                       key=lambda c: (not is_directory(c.url), -c.relevance))[:settings.max_pages_fetched_per_claim]
     sem = asyncio.Semaphore(4)
+    if to_fetch and report:
+        report("pages", "fetch_page", "start", f"{len(to_fetch)} page(s) : " + ", ".join(
+            sorted({domain_of(c.url) for c in to_fetch})[:4]))
     await asyncio.gather(*(_fetch_and_enrich(c, draft, gateway, sem, collected) for c in to_fetch))
+    if to_fetch and report:
+        report("pages", "fetch_page", "ok", f"{sum(1 for c in to_fetch if c.fetched)}/{len(to_fetch)} page(s) lue(s)")
 
     evidences: list[Evidence] = []
     for c in candidates.values():

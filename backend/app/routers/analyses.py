@@ -22,7 +22,8 @@ from ..auth import current_user
 
 from ..config import get_settings
 from ..db import get_db
-from ..schemas import AnalysisOut, AnalysisPage, AnalysisResult, AnalysisStats, AnalysisUpdate, Article, Workflow
+from ..schemas import (AnalysisOut, AnalysisPage, AnalysisResult, AnalysisStats, AnalysisUpdate, Article, ArticleEdit,
+                       ArticlePublish, PostOut, Workflow)
 from ..services import article as article_service
 from ..services.llm import LLMClient
 from ..services.pipeline import load_preferences, run_analysis
@@ -213,6 +214,44 @@ async def regenerate_article(analysis_id: str, user: dict[str, Any] = Depends(cu
     return result.article
 
 
+@router.put("/{analysis_id}/article", response_model=Article)
+async def edit_article(analysis_id: str, payload: ArticleEdit, user: dict[str, Any] = Depends(current_user)):
+    """Enregistre la version relue de l'article suggéré (les sources restent celles de l'analyse)."""
+    record = _owned(analysis_id, user)
+    result = _result(record)
+    if not result.article:
+        raise HTTPException(404, "Article non généré")
+    result.article = result.article.model_copy(update={
+        "title": payload.title.strip(), "lead": payload.lead.strip(), "body_markdown": payload.body_markdown.strip(),
+        "key_points": [p.strip() for p in payload.key_points if p.strip()], "social_post": payload.social_post.strip(),
+        "edited": True,
+    })
+    get_db().update_analysis(analysis_id, result=result.model_dump(mode="json"))
+    return result.article
+
+
+@router.post("/{analysis_id}/publish", response_model=PostOut, status_code=201)
+async def publish_article(analysis_id: str, payload: ArticlePublish, user: dict[str, Any] = Depends(current_user)):
+    """Publie l'article (ou sa version courte) sur le fil média, rattaché à l'analyse."""
+    from .social import to_post
+
+    db = get_db()
+    record = _owned(analysis_id, user)
+    if record["status"] != "done":
+        raise HTTPException(409, "Seule une analyse terminée peut être publiée")
+    art = _result(record).article
+    if not art:
+        raise HTTPException(404, "Article non généré")
+    body = (payload.body or "").strip()
+    if not body:
+        body = article_service.to_markdown(art) if payload.format == "article" else \
+            (art.social_post or f"{art.title}\n\n{art.lead}")
+    post_id = uuid.uuid4().hex[:16]
+    db.create_post(user["id"], body[:20000], analysis_id, None, post_id)
+    db.update_analysis(analysis_id, workflow="publie")
+    return to_post(db.get_post(post_id, user["id"]), user)
+
+
 @router.get("/{analysis_id}/article.md", response_class=PlainTextResponse)
 async def article_markdown(analysis_id: str, user: dict[str, Any] = Depends(current_user)):
     result = _result(_readable(analysis_id, user))
@@ -227,5 +266,5 @@ async def article_html(analysis_id: str, user: dict[str, Any] = Depends(current_
     result = _result(_readable(analysis_id, user))
     if not result.article:
         raise HTTPException(404, "Article non généré")
-    return HTMLResponse(article_service.to_html(result.article),
+    return HTMLResponse(article_service.to_html(result.article, load_preferences(user["id"]).report_language),
                         headers={"Content-Disposition": f'attachment; filename="verification-{analysis_id}.html"'})

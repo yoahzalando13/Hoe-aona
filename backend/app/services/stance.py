@@ -68,7 +68,7 @@ Réponds en {LANG_NAMES.get(lang, 'français')} avec ce JSON :
  "arguments_against": ["argument qui la contredit, terminé par la référence, ex. [S1]"],
  "conclusion": "une phrase de conclusion prudente"}}
 Si les preuves sont insuffisantes, laisse les listes d'arguments vides et dis-le dans la conclusion.
-{reasoning.prompt_section(draft.universal, draft.implications)}"""
+{reasoning.prompt_section(draft.universal, draft.implications, LANG_NAMES.get(lang, 'français'))}"""
 
 
 def _numeric_stance(claimed: str | None, official: float | None) -> tuple[str, str]:

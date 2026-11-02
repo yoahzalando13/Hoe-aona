@@ -151,3 +151,74 @@ def test_cible_madagascar():
     assert madagascar.is_madagascar("Le prix du riz à Toamasina", "FRA")
     assert madagascar.is_madagascar("Le prix du riz a doublé", "MDG")
     assert not madagascar.is_madagascar("Le chômage en France a baissé", "MDG")
+
+
+def _analysis_with_article(user_id):
+    from datetime import datetime, timezone
+    aid = _done_analysis(user_id, "Inflation à Madagascar")
+    article = {"title": "L'inflation n'a pas atteint 8 %", "lead": "Un chiffre circule. Il est inexact.",
+               "body_markdown": "## Ce qui circule\nUn message [1].", "key_points": ["Faux : 7,6 % en 2024."],
+               "social_post": "🔎 Inflation : 7,6 % et non 8 %.", "tags": [],
+               "sources": [{"n": 1, "title": "INSTAT", "publisher": "instat.mg", "url": "https://www.instat.mg"}],
+               "generated_by": "modele", "generated_at": datetime.now(timezone.utc).isoformat()}
+    result = {"global_score": 4.0, "verdict": "douteux", "verdict_label": "Douteux", "summary": "s",
+              "criteria": [], "claims": [], "inputs": [], "article": article}
+    get_db().update_analysis(aid, result=result)
+    return aid
+
+
+def test_article_modifie_et_publie_sur_le_fil(users):
+    alice, alice_user = users["alice"]
+    bob, _ = _client("carol@test.mg", "Carol")
+    aid = _analysis_with_article(alice_user["id"])
+
+    r = alice.put(f"/api/analyses/{aid}/article", json={
+        "title": "Inflation : 7,6 % en 2024", "lead": "Relu.", "body_markdown": "## Faits\nCorrigé [1].",
+        "key_points": ["Point clé", " "], "social_post": "Version courte"})
+    assert r.status_code == 200, r.text
+    assert r.json()["edited"] is True and r.json()["key_points"] == ["Point clé"]
+    assert bob.put(f"/api/analyses/{aid}/article", json={"title": "x", "body_markdown": "y"}).status_code == 404
+
+    r = alice.post(f"/api/analyses/{aid}/publish", json={"format": "article"})
+    assert r.status_code == 201, r.text
+    post = r.json()
+    assert post["body"].startswith("# Inflation : 7,6 % en 2024")
+    assert "## L'essentiel" in post["body"] and "## Sources" in post["body"]
+    assert post["analysis"]["id"] == aid
+    assert alice.get(f"/api/analyses/{aid}").json()["workflow"] == "publie"
+
+    r = alice.post(f"/api/analyses/{aid}/publish", json={"format": "court", "body": "  Texte retouché  "})
+    assert r.status_code == 201 and r.json()["body"] == "Texte retouché"
+    assert bob.post(f"/api/analyses/{aid}/publish", json={"format": "court"}).status_code == 404
+
+
+def test_journal_des_agents_expose(users):
+    alice, alice_user = users["alice"]
+    aid = _done_analysis(alice_user["id"])
+    get_db().update_analysis(aid, events=[{"at": 0.4, "agent": "lecteur", "message": "Lecture du texte saisi",
+                                           "status": "done", "detail": "120 caractères", "tool": ""}])
+    events = alice.get(f"/api/analyses/{aid}").json()["events"]
+    assert events[0]["agent"] == "lecteur" and events[0]["status"] == "done"
+
+
+def test_statistiques_catalogue_et_validation(users):
+    alice, _ = users["alice"]
+    cat = alice.get("/api/stats/catalog").json()
+    assert any(i["code"] == "FP.CPI.TOTL.ZG" and i["imf"] for i in cat["indicators"])
+    assert cat["countries"][0]["code"] == "MDG" and "MDG" in cat["neighbours"]
+    assert alice.get("/api/stats/series", params={"indicator": "INCONNU", "country": "MDG"}).status_code == 404
+    assert alice.get("/api/stats/series", params={"indicator": "SP.POP.TOTL", "country": "XXX"}).status_code == 404
+    assert TestClient(app).get("/api/stats/catalog").status_code == 401
+
+
+def test_langue_de_l_interface_enregistree_dans_le_compte(users):
+    alice, _ = users["alice"]
+    admin, _ = users["admin"]
+    prefs = alice.get("/api/settings").json()
+    assert prefs.get("ui_language") is None            # pas encore choisie : la langue du navigateur s'applique
+    prefs.update(ui_language="mg", report_language="mg")
+    assert alice.put("/api/settings", json=prefs).status_code == 200
+    assert alice.get("/api/settings").json()["ui_language"] == "mg"
+    assert admin.get("/api/settings").json().get("ui_language") is None   # propre à chaque compte
+    prefs["ui_language"] = "de"
+    assert alice.put("/api/settings", json=prefs).status_code == 422      # seules mg, fr, en sont acceptées

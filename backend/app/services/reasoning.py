@@ -52,11 +52,11 @@ Format :
 }}"""
 
 
-def prompt_section(universal: bool, implications: list[dict]) -> str:
+def prompt_section(universal: bool, implications: list[dict], lang_name: str = "français") -> str:
     hint = ("L'affirmation est ABSOLUE : un seul contre-exemple fiable suffit à la réfuter." if universal
             else "L'affirmation n'est pas absolue : un contre-exemple l'affaiblit sans forcément la réfuter.")
     imps = "; ".join(i["consequence"] for i in implications) or "à toi de les formuler"
-    return PROMPT.format(universal_hint=hint, implications=imps)
+    return PROMPT.format(universal_hint=hint, implications=imps) + f"\nRédige tous les textes des tests en {lang_name}."
 
 
 def _refs(value: Any, known: set[str]) -> list[str]:

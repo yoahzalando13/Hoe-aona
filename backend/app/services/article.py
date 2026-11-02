@@ -79,13 +79,58 @@ def _dossier(result: AnalysisResult, index: dict[str, int]) -> str:
     return "\n".join(parts)
 
 
+TOOL_LABELS = {
+    "wikipedia_search": "Wikipedia", "news_search": "la presse internationale (GDELT)", "web_search": "le web",
+    "news_madagascar": "la presse malgache", "worldbank_indicator": "la Banque mondiale", "imf_indicator": "le FMI",
+    "fetch_page": "les pages citées", "detect_ai_image": "un détecteur d'images générées",
+    "platform_posts": "les publications du fil média",
+}
+
+
+def _score(value: float) -> str:
+    return str(value).replace(".", ",")
+
+
+def key_points(result: AnalysisResult) -> list[str]:
+    points = [f"« {truncate(c.text, 110)} » : {c.verdict_label.lower()} ({_score(c.truth_score)}/10)."
+              for c in result.claims[:3]]
+    ai = next((c for c in result.criteria if c.key == "ai"), None)
+    if ai:
+        points.append(ai.summary.rstrip(".") + ".")
+    return points[:4]
+
+
+def method_section(result: AnalysisResult, sources: list[ArticleSource]) -> str:
+    consulted = [TOOL_LABELS[t] for t in result.tools_used if t in TOOL_LABELS]
+    tests = sum(1 for c in result.claims for t in c.reasoning if t.outcome != "non_concluant")
+    parts = [f"Nous avons isolé {len(result.claims)} affirmation(s) vérifiable(s) et retenu {len(sources)} source(s)"
+             + (f", après avoir consulté {', '.join(consulted)}" if consulted else "") + "."]
+    if tests:
+        parts.append(f"{tests} test(s) de raisonnement (contre-exemples, conséquences par l'absurde, ordres de grandeur) "
+                     "ont complété la recherche de preuves.")
+    if result.excluded_sources:
+        parts.append(f"{len(result.excluded_sources)} source(s) ont été écartées car jugées peu fiables "
+                     "ou probablement générées par IA.")
+    return " ".join(parts)
+
+
+def social_post(result: AnalysisResult, title: str, lead: str) -> str:
+    """Texte court suggéré pour le fil média : verdict, éléments clés, invitation à lire l'analyse."""
+    lines = [f"🔎 {title}", "", lead, ""]
+    for c in result.claims[:3]:
+        lines.append(f"• {truncate(c.text, 90)} → {c.verdict_label}")
+    lines += ["", f"Score de fiabilité : {_score(result.global_score)}/10 ({result.verdict_label.lower()}). "
+                  "Preuves et sources dans l'analyse jointe."]
+    return truncate("\n".join(lines), 900)
+
+
 def _template(result: AnalysisResult, sources: list[ArticleSource], index: dict[str, int]) -> tuple[str, str, str]:
     def renumber(text: str, claim_id: str) -> str:
         return re.sub(r"\[([ES]\d+)\]", lambda m: f"[{index.get(f'{claim_id}:{m.group(1)}', '?')}]", text)
 
     title = f"Vérification : {result.topic or 'ce qui circule'} — {result.verdict_label.lower()}"
     lead = (f"Après examen de {len(result.claims)} affirmation(s) et de {len(sources)} source(s), "
-            f"le contenu obtient un score de fiabilité de {str(result.global_score).replace('.', ',')}/10.")
+            f"le contenu obtient un score de fiabilité de {_score(result.global_score)}/10.")
     body = ["## Ce qui circule", result.summary or "Un contenu a été soumis à vérification.", "", "## Ce que disent les faits"]
     for claim in result.claims:
         body.append(f"### « {claim.text} »")
@@ -106,7 +151,8 @@ def _template(result: AnalysisResult, sources: list[ArticleSource], index: dict[
     ai = next((c for c in result.criteria if c.key == "ai"), None)
     if ai:
         body += ["## Le contenu a-t-il été généré par IA ?", ai.summary, ""]
-    body += ["## Notre verdict", f"{result.verdict_label} ({str(result.global_score).replace('.', ',')}/10)."]
+    body += ["## Comment nous avons vérifié", method_section(result, sources), ""]
+    body += ["## Notre verdict", f"{result.verdict_label} ({_score(result.global_score)}/10)."]
     return title, lead, "\n".join(body)
 
 
@@ -118,26 +164,44 @@ async def generate(result: AnalysisResult, llm: LLMClient, lang: str, warnings: 
     sources, index = collect_sources(result)
     now = datetime.now(timezone.utc)
     if llm.available and result.claims:
-        prompt = f"""Rédige en {LANG_NAMES.get(lang, 'français')} un article de vérification prêt à publier (450 à 700 mots)
-à partir de ce dossier. Règles :
+        prompt = f"""Rédige en {LANG_NAMES.get(lang, 'français')} un article de vérification prêt à publier (500 à 800 mots)
+à partir de ce dossier. Il sera proposé comme suggestion à un journaliste qui le relira avant publication.
+
+Exigences de qualité :
+- titre informatif qui donne le verdict (pas de question, pas de clic facile), 90 caractères max ;
+- chapô de 2 phrases : ce qui circule, puis ce que montre la vérification ;
 - n'utilise que les faits du dossier, chacun suivi de son numéro de source entre crochets, ex. [2] ;
 - reformule, ne recopie pas les extraits (au plus une courte citation entre guillemets) ;
-- donne chaque chiffre avec son année et sa source ; signale quand une donnée officielle date de plus d'un an ;
-- structure en Markdown : ## Ce qui circule, ## Ce que disent les faits, ## Les chiffres (si pertinent),
-  ## Le contenu a-t-il été généré par IA ?, ## Notre verdict ;
-- ton neutre, pas de sensationnalisme, pas de liste de sources (elle est ajoutée automatiquement).
+- donne chaque chiffre avec son année et sa source ; signale quand une donnée officielle date de plus d'un an
+  ou qu'il s'agit d'une estimation ; explique ce que le chiffre signifie concrètement pour le lecteur ;
+- distingue clairement ce qui est établi, ce qui est contredit et ce qui reste non vérifiable ;
+- si le sujet concerne Madagascar, donne le contexte local utile (institution compétente, région concernée) ;
+- phrases courtes, vocabulaire accessible, ton neutre, aucun sensationnalisme, aucun jugement sur les personnes ;
+- structure en Markdown : ## Ce qui circule, ## Ce que disent les faits (un ### par affirmation, avec son verdict en gras),
+  ## Les chiffres (si pertinent), ## Le contenu a-t-il été généré par IA ?, ## Comment nous avons vérifié, ## Notre verdict ;
+- pas de liste de sources (elle est ajoutée automatiquement).
+
+Ajoute aussi :
+- "key_points" : 3 ou 4 phrases très courtes résumant l'essentiel (verdicts et chiffre clé) ;
+- "social_post" : une publication de 400 à 700 caractères pour un fil d'actualité professionnel, qui annonce le verdict,
+  cite l'élément décisif et invite à consulter l'analyse ; un seul emoji en tête au plus, pas de hashtag.
 
 DOSSIER :
 {_dossier(result, index)}
 
-JSON attendu : {{"title": "titre informatif de 90 caractères max", "lead": "chapô de 2 phrases",
-"body_markdown": "corps de l'article", "tags": ["3 à 5 mots-clés"]}}"""
+JSON attendu : {{"title": "...", "lead": "...", "key_points": ["..."], "body_markdown": "...",
+"social_post": "...", "tags": ["3 à 5 mots-clés"]}}"""
         try:
             data = await llm.chat_json(SYSTEM, prompt, max_tokens=6000)
             if data.get("body_markdown"):
                 body = re.sub(r"\[(\d+)\]", lambda m: m.group(0) if int(m.group(1)) <= len(sources) else "", data["body_markdown"])
-                return Article(title=truncate(data.get("title", ""), 140) or "Vérification",
-                               lead=truncate(data.get("lead", ""), 400), body_markdown=body.strip(),
+                title = truncate(data.get("title", ""), 140) or "Vérification"
+                lead = truncate(data.get("lead", ""), 400)
+                points = [truncate(str(p), 200) for p in data.get("key_points", []) if str(p).strip()][:4]
+                post = truncate(str(data.get("social_post", "")).strip(), 1200)
+                return Article(title=title, lead=lead, body_markdown=body.strip(),
+                               key_points=points or key_points(result),
+                               social_post=post or social_post(result, title, lead),
                                tags=[str(t) for t in data.get("tags", [])][:6], sources=sources,
                                generated_by="llm", generated_at=now)
         except Exception as exc:  # noqa: BLE001
@@ -145,11 +209,14 @@ JSON attendu : {{"title": "titre informatif de 90 caractères max", "lead": "cha
             warnings.append("Rédaction par LLM indisponible : article produit à partir du modèle")
     title, lead, body = _template(result, sources, index)
     return Article(title=title, lead=lead, body_markdown=body, tags=[result.topic] if result.topic else [],
+                   key_points=key_points(result), social_post=social_post(result, title, lead),
                    sources=sources, generated_by="modele", generated_at=now)
 
 
 def to_markdown(article: Article) -> str:
-    return (f"# {article.title}\n\n*{article.lead}*\n\n{article.body_markdown}\n\n## Sources\n\n"
+    essentials = ("## L'essentiel\n\n" + "\n".join(f"- {p}" for p in article.key_points) + "\n\n") \
+        if article.key_points else ""
+    return (f"# {article.title}\n\n*{article.lead}*\n\n{essentials}{article.body_markdown}\n\n## Sources\n\n"
             f"{sources_markdown(article.sources)}\n")
 
 
@@ -160,7 +227,7 @@ def _inline(text: str) -> str:
     return re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r'<a href="\2" rel="noopener">\1</a>', text)
 
 
-def to_html(article: Article) -> str:
+def to_html(article: Article, lang: str = "fr") -> str:
     out, in_list = [], None
     for line in to_markdown(article).splitlines():
         m_head = re.match(r"^(#{1,3}) (.*)", line)
@@ -183,5 +250,5 @@ def to_html(article: Article) -> str:
             out.append(f"<p>{_inline(line)}</p>")
     if in_list:
         out.append(f"</{in_list}>")
-    return ("<!DOCTYPE html><html lang=\"fr\"><head><meta charset=\"utf-8\"><title>"
+    return (f"<!DOCTYPE html><html lang=\"{html.escape(lang)}\"><head><meta charset=\"utf-8\"><title>"
             f"{html.escape(article.title)}</title></head><body><article>{''.join(out)}</article></body></html>")

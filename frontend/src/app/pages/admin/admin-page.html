@@ -1,14 +1,14 @@
 <section class="page page-wide admin">
   <header class="a-head">
-    <h1 class="page-title">Administration</h1>
-    <p class="muted">Comptes du personnel média, modération du fil et activité de la plateforme.</p>
+    <h1 class="page-title">{{ 'Administration' | t }}</h1>
+    <p class="muted">{{ 'Comptes du personnel média, modération du fil et activité de la plateforme.' | t }}</p>
   </header>
 
-  <div class="tabs" role="tablist" aria-label="Sections d’administration">
-    <button type="button" role="tab" [class.on]="tab() === 'overview'" [attr.aria-selected]="tab() === 'overview'" (click)="open('overview')">Vue d’ensemble</button>
-    <button type="button" role="tab" [class.on]="tab() === 'users'" [attr.aria-selected]="tab() === 'users'" (click)="open('users')">Comptes</button>
-    <button type="button" role="tab" [class.on]="tab() === 'posts'" [attr.aria-selected]="tab() === 'posts'" (click)="open('posts')">Modération</button>
-    <a class="tab-link" routerLink="/sources">Sources officielles</a>
+  <div class="tabs" role="tablist" [attr.aria-label]="'Sections d’administration' | t">
+    <button type="button" role="tab" [class.on]="tab() === 'overview'" [attr.aria-selected]="tab() === 'overview'" (click)="open('overview')">{{ 'Vue d’ensemble' | t }}</button>
+    <button type="button" role="tab" [class.on]="tab() === 'users'" [attr.aria-selected]="tab() === 'users'" (click)="open('users')">{{ 'Comptes' | t }}</button>
+    <button type="button" role="tab" [class.on]="tab() === 'posts'" [attr.aria-selected]="tab() === 'posts'" (click)="open('posts')">{{ 'Modération' | t }}</button>
+    <a class="tab-link" routerLink="/sources">{{ 'Sources officielles' | t }}</a>
   </div>
 
   @if (error()) { <p class="error-box" role="alert">{{ error() }}</p> }
@@ -16,21 +16,21 @@
   @switch (tab()) {
     @case ('overview') {
       @if (stats(); as s) {
-        <h2 class="section-label">Plateforme</h2>
+        <h2 class="section-label">{{ 'Plateforme' | t }}</h2>
         <div class="stat-grid">
-          <div class="stat"><b>{{ s.active_users }}</b><span>comptes actifs sur {{ s.users }}</span></div>
-          <div class="stat"><b>{{ s.admins }}</b><span>administrateurs</span></div>
-          <div class="stat"><b>{{ s.analyses }}</b><span>analyses</span></div>
-          <div class="stat"><b>{{ s.posts }}</b><span>publications ({{ s.hidden_posts }} masquées)</span></div>
-          <div class="stat"><b>{{ s.comments }}</b><span>commentaires</span></div>
-          <div class="stat"><b>{{ s.likes }}</b><span>mentions « J’apprécie »</span></div>
+          <div class="stat"><b>{{ s.active_users }}</b><span>{{ 'comptes actifs sur {n}' | t: { n: s.users } }}</span></div>
+          <div class="stat"><b>{{ s.admins }}</b><span>{{ 'administrateurs' | t }}</span></div>
+          <div class="stat"><b>{{ s.analyses }}</b><span>{{ 'analyses' | t }}</span></div>
+          <div class="stat"><b>{{ s.posts }}</b><span>{{ 'publications ({n} masquées)' | t: { n: s.hidden_posts } }}</span></div>
+          <div class="stat"><b>{{ s.comments }}</b><span>{{ 'commentaires' | t }}</span></div>
+          <div class="stat"><b>{{ s.likes }}</b><span>{{ 'mentions « J’apprécie »' | t }}</span></div>
         </div>
       }
       @if (analysisStats(); as a) {
-        <h2 class="section-label">Informations traitées (toutes rédactions)</h2>
+        <h2 class="section-label">{{ 'Informations traitées (toutes rédactions)' | t }}</h2>
         <div class="grid-2">
           <div class="card">
-            <h3>Verdicts · score moyen {{ formatScore(a.average_score) }}/10</h3>
+            <h3>{{ 'Verdicts · score moyen {s}/10' | t: { s: formatScore(a.average_score) } }}</h3>
             @for (v of verdicts; track v.key) {
               <div class="bar-row">
                 <span>{{ v.label }}</span>
@@ -40,7 +40,7 @@
             }
           </div>
           <div class="card">
-            <h3>Suivi éditorial</h3>
+            <h3>{{ 'Suivi éditorial' | t }}</h3>
             @for (w of workflows; track w.key) {
               <div class="bar-row">
                 <span>{{ w.label }}</span>
@@ -56,30 +56,30 @@
     @case ('users') {
       <div class="search">
         <app-icon name="search" [size]="20" />
-        <label class="visually-hidden" for="uq">Rechercher un compte</label>
-        <input id="uq" type="search" placeholder="Nom, e-mail ou média" autocomplete="off" [ngModel]="userQuery()" (ngModelChange)="search('users', $event)">
+        <label class="visually-hidden" for="uq">{{ 'Rechercher un compte' | t }}</label>
+        <input id="uq" type="search" [placeholder]="'Nom, e-mail ou média' | t" autocomplete="off" [ngModel]="userQuery()" (ngModelChange)="search('users', $event)">
       </div>
-      @if (usersLoading() && !users().length) { <p class="muted">Chargement…</p> }
+      @if (usersLoading() && !users().length) { <p class="muted">{{ 'Chargement…' | t }}</p> }
       <ul class="users">
         @for (u of users(); track u.id) {
           <li class="user" [class.off]="!u.active">
             <a class="avatar" [class]="avatarTone(u.id)" [routerLink]="['/profil', u.id]">{{ initials(u.display_name) }}</a>
             <div class="u-t">
-              <span class="u-n">{{ u.display_name }} @if (u.id === auth.user()?.id) { <span class="muted">(vous)</span> }</span>
-              <span class="u-s">{{ u.email }} · {{ u.organization || 'Sans média' }}</span>
-              <span class="u-s">Inscrit le {{ u.created_at | date: 'd MMM y' }} · {{ u.analyses_count }} analyses · {{ u.posts_count }} publications</span>
+              <span class="u-n">{{ u.display_name }} @if (u.id === auth.user()?.id) { <span class="muted">{{ '(vous)' | t }}</span> }</span>
+              <span class="u-s">{{ u.email }} · {{ u.organization || ('Sans média' | t) }}</span>
+              <span class="u-s">{{ 'Inscrit le {date} · {a} analyses · {p} publications' | t: { date: u.created_at | date: 'd MMM y', a: u.analyses_count, p: u.posts_count } }}</span>
             </div>
-            <label class="visually-hidden" [for]="'role-' + u.id">Rôle de {{ u.display_name }}</label>
+            <label class="visually-hidden" [for]="'role-' + u.id">{{ 'Rôle de {nom}' | t: { nom: u.display_name } }}</label>
             <select class="input role" [id]="'role-' + u.id" [ngModel]="u.role" (ngModelChange)="setRole(u, $event)">
-              <option ngValue="media">Personnel média</option>
-              <option ngValue="admin">Administrateur</option>
+              <option ngValue="media">{{ 'Personnel média' | t }}</option>
+              <option ngValue="admin">{{ 'Administrateur' | t }}</option>
             </select>
             <button type="button" class="btn btn-sm" [class.btn-danger]="u.active" (click)="toggleActive(u)">
-              {{ u.active ? 'Désactiver' : 'Réactiver' }}
+              {{ u.active ? ('Désactiver' | t) : ('Réactiver' | t) }}
             </button>
           </li>
         } @empty {
-          @if (!usersLoading()) { <li class="empty"><p>Aucun compte trouvé.</p></li> }
+          @if (!usersLoading()) { <li class="empty"><p>{{ 'Aucun compte trouvé.' | t }}</p></li> }
         }
       </ul>
     }
@@ -88,17 +88,17 @@
       <div class="row-tools">
         <div class="search">
           <app-icon name="search" [size]="20" />
-          <label class="visually-hidden" for="pq">Rechercher une publication</label>
-          <input id="pq" type="search" placeholder="Texte ou auteur" autocomplete="off" [ngModel]="postQuery()" (ngModelChange)="search('posts', $event)">
+          <label class="visually-hidden" for="pq">{{ 'Rechercher une publication' | t }}</label>
+          <input id="pq" type="search" [placeholder]="'Texte ou auteur' | t" autocomplete="off" [ngModel]="postQuery()" (ngModelChange)="search('posts', $event)">
         </div>
-        <label class="hidden-only"><input type="checkbox" [ngModel]="onlyHidden()" (ngModelChange)="onlyHidden.set($event)"> Masquées seulement</label>
+        <label class="hidden-only"><input type="checkbox" [ngModel]="onlyHidden()" (ngModelChange)="onlyHidden.set($event)"> {{ 'Masquées seulement' | t }}</label>
       </div>
-      <p class="muted count">{{ postsTotal() }} publication{{ postsTotal() > 1 ? 's' : '' }} au total</p>
+      <p class="muted count">{{ postsTotal() | plural: '{n} publication au total' : '{n} publications au total' }}</p>
       <div class="posts">
         @for (p of visiblePosts(); track p.id) {
           <app-post-card [post]="p" [moderation]="true" (changed)="replace($event)" (removed)="drop($event)" />
         } @empty {
-          @if (!postsLoading()) { <div class="empty"><p>Aucune publication à modérer.</p></div> }
+          @if (!postsLoading()) { <div class="empty"><p>{{ 'Aucune publication à modérer.' | t }}</p></div> }
         }
       </div>
     }

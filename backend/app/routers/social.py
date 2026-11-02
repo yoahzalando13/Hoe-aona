@@ -56,8 +56,8 @@ async def create_post(body: str = Form(""), analysis_id: str = Form(""), image: 
     analysis_id = analysis_id.strip() or None
     if not body and not analysis_id and not image:
         raise HTTPException(422, "Rédigez un message, joignez une image ou une analyse")
-    if len(body) > 5000:
-        raise HTTPException(413, "Message trop long (5 000 caractères maximum)")
+    if len(body) > 20000:
+        raise HTTPException(413, "Message trop long (20 000 caractères maximum)")
     if analysis_id:
         record = db.get_analysis(analysis_id)
         if not record or record.get("user_id") != user["id"]:

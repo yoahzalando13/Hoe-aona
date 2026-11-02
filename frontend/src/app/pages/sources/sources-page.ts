@@ -5,6 +5,7 @@ import { Api, errorMessage } from '../../core/api';
 import { Auth } from '../../core/auth';
 import { OfficialSource, OfficialSourceIn } from '../../core/models';
 import { Icon } from '../../shared/icon';
+import { TPipe, t } from '../../core/i18n';
 
 interface Draft extends Omit<OfficialSourceIn, 'topics'> { topics: string; }
 
@@ -15,7 +16,7 @@ const EMPTY: Draft = {
 
 @Component({
   selector: 'app-sources-page',
-  imports: [DatePipe, NgTemplateOutlet, FormsModule, Icon],
+  imports: [DatePipe, NgTemplateOutlet, FormsModule, Icon, TPipe],
   templateUrl: './sources-page.html',
   styleUrl: './sources-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -37,7 +38,7 @@ export class SourcesPage {
   protected readonly groups = computed(() => {
     const out: { label: string; items: OfficialSource[] }[] = [];
     for (const s of this.sources()) {
-      const label = s.category || 'Autres';
+      const label = s.category || t('Autres');
       const g = out.find((x) => x.label === label);
       if (g) g.items.push(s);
       else out.push({ label, items: [s] });
@@ -86,14 +87,14 @@ export class SourcesPage {
     this.error.set(null);
     const req = id === 'new' ? this.api.createSource(payload) : this.api.updateSource(id!, payload);
     req.subscribe({
-      next: () => { this.saving.set(false); this.editId.set(null); this.load(); this.flash('Source enregistrée'); },
+      next: () => { this.saving.set(false); this.editId.set(null); this.load(); this.flash(t('Source enregistrée')); },
       error: (e) => { this.error.set(errorMessage(e)); this.saving.set(false); },
     });
   }
 
   protected remove(s: OfficialSource): void {
     this.api.deleteSource(s.id).subscribe({
-      next: () => { this.confirmId.set(null); this.sources.update((l) => l.filter((x) => x.id !== s.id)); this.flash('Source supprimée'); },
+      next: () => { this.confirmId.set(null); this.sources.update((l) => l.filter((x) => x.id !== s.id)); this.flash(t('Source supprimée')); },
       error: (e) => this.error.set(errorMessage(e)),
     });
   }

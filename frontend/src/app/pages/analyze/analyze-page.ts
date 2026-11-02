@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { Api, errorMessage } from '../../core/api';
 import { fileSize, kindIcon } from '../../core/format';
 import { Icon } from '../../shared/icon';
+import { LOCALE, TPipe, t } from '../../core/i18n';
 
 type FileKind = 'image' | 'document' | 'audio';
 
@@ -31,7 +32,7 @@ function kindOf(file: File): FileKind | null {
 
 @Component({
   selector: 'app-analyze-page',
-  imports: [FormsModule, Icon],
+  imports: [FormsModule, Icon, TPipe],
   templateUrl: './analyze-page.html',
   styleUrl: './analyze-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -138,11 +139,11 @@ export class AnalyzePage {
     try {
       parsed = new URL(value);
     } catch {
-      this.error.set('Lien invalide : collez une adresse complète commençant par https://');
+      this.error.set(t('Lien invalide : collez une adresse complète commençant par https://'));
       return;
     }
     if (!['http:', 'https:'].includes(parsed.protocol)) {
-      this.error.set('Seuls les liens http et https sont acceptés.');
+      this.error.set(t('Seuls les liens http et https sont acceptés.'));
       return;
     }
     if (!this.urls().includes(parsed.href)) this.urls.update((u) => [...u, parsed.href].slice(0, 10));
@@ -165,7 +166,7 @@ export class AnalyzePage {
       return;
     }
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
-      this.error.set('Ce navigateur ne permet pas l’enregistrement : importez un fichier audio.');
+      this.error.set(t('Ce navigateur ne permet pas l’enregistrement : importez un fichier audio.'));
       return;
     }
     try {
@@ -178,7 +179,7 @@ export class AnalyzePage {
         if ((recorder as MediaRecorder & { keep?: boolean }).keep && chunks.length) {
           const type = recorder.mimeType || 'audio/webm';
           const ext = type.includes('mp4') ? 'm4a' : type.includes('ogg') ? 'ogg' : 'webm';
-          const stamp = new Date().toLocaleTimeString('fr-FR').replace(/:/g, 'h').slice(0, 5);
+          const stamp = new Date().toLocaleTimeString(LOCALE).replace(/:/g, 'h').slice(0, 5);
           this.addFiles([new File(chunks, `enregistrement-${stamp}.${ext}`, { type })]);
         }
       };
@@ -191,7 +192,7 @@ export class AnalyzePage {
         if (this.recordSeconds() >= 300) this.stopRecording(true); // 5 minutes maximum
       }, 1000);
     } catch {
-      this.error.set('Micro inaccessible : autorisez l’accès au micro ou importez un fichier audio.');
+      this.error.set(t('Micro inaccessible : autorisez l’accès au micro ou importez un fichier audio.'));
     }
   }
 

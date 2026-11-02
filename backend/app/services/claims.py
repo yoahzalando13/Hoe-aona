@@ -32,7 +32,10 @@ class ClaimDraft:
     universal: bool = False                   # affirmation absolue (« tous », « jamais »…) : un contre-exemple suffit
 
 
-def _prompt(text: str, max_claims: int, default_country: str) -> str:
+LANG_NAMES = {"fr": "français", "en": "anglais", "mg": "malgache"}
+
+
+def _prompt(text: str, max_claims: int, default_country: str, lang: str = "fr") -> str:
     return f"""Extrais au maximum {max_claims} affirmations factuelles VÉRIFIABLES du contenu ci-dessous :
 chiffres, événements datés, citations attribuées, faits scientifiques ou sanitaires. Ignore les opinions,
 les questions et les formules vagues. Classe-les de la plus importante à la moins importante.
@@ -54,6 +57,7 @@ Contexte : le public est principalement à Madagascar. Le contenu peut être en 
 ou mélanger les deux ; dans ce cas, écris "search_query" en français. Les lieux (Antananarivo, Toamasina…),
 institutions (JIRAMA, BNGRC, CENI, HCC…) et montants en ariary désignent Madagascar.
 Pays par défaut si aucun n'est précisé : {default_country}.
+Écris "topic" et "summary" en {LANG_NAMES.get(lang, "français")} ; garde "text" et "search_query" dans la langue d'origine.
 Format : {{"topic": "sujet en 6 mots maximum", "summary": "résumé neutre du contenu en une phrase", "claims": [...]}}
 
 CONTENU :
@@ -99,13 +103,13 @@ def _heuristic(text: str, max_claims: int, default_country: str) -> tuple[list[C
 
 
 async def extract_claims(text: str, llm: LLMClient, max_claims: int, default_country: str,
-                         warnings: list[str]) -> tuple[list[ClaimDraft], str, str]:
+                         warnings: list[str], lang: str = "fr") -> tuple[list[ClaimDraft], str, str]:
     """Retourne (affirmations, sujet, résumé)."""
     if not text.strip():
         return [], "", ""
     if llm.available:
         try:
-            data = await llm.chat_json(SYSTEM, _prompt(text, max_claims, default_country))
+            data = await llm.chat_json(SYSTEM, _prompt(text, max_claims, default_country, lang))
             drafts = []
             for c in data.get("claims", [])[:max_claims]:
                 if not isinstance(c, dict) or not c.get("text"):

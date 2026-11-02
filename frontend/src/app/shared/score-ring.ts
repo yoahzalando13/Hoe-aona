@@ -1,11 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { formatScore, scoreTone, toneColor } from '../core/format';
+import { TPipe } from '../core/i18n';
 
 @Component({
   selector: 'app-score-ring',
+  imports: [TPipe],
   template: `
     <svg [attr.width]="size()" [attr.height]="size()" viewBox="0 0 100 100" role="img"
-         [attr.aria-label]="'Score ' + label() + ' sur 10'">
+         [attr.aria-label]="'Score {s} sur 10' | t: { s: label() }">
       <circle cx="50" cy="50" [attr.r]="r()" fill="none" stroke="var(--soft)" [attr.stroke-width]="stroke()" />
       <circle cx="50" cy="50" [attr.r]="r()" fill="none" [attr.stroke]="color()" [attr.stroke-width]="stroke()"
               stroke-linecap="round" [attr.stroke-dasharray]="dash()" transform="rotate(-90 50 50)" class="arc" />
