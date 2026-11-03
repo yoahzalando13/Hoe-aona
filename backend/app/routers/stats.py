@@ -14,6 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..auth import current_user
 from ..mcp.gateway import get_gateway
+from ..services import demo_activity
 from ..tools import imf, worldbank
 
 router = APIRouter(prefix="/api/stats", tags=["statistiques"])
@@ -136,3 +137,9 @@ async def madagascar_dashboard(_: dict[str, Any] = Depends(current_user)):
         return out
 
     return await asyncio.gather(*(one(c) for c in DASHBOARD))
+
+
+@router.get("/activity")
+async def platform_activity(_: dict[str, Any] = Depends(current_user)):
+    """Activité par région (30 jours) et contenus truqués repérés. Données fictives de démonstration (`demo`)."""
+    return demo_activity.activity()

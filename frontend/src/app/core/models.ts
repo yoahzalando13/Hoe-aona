@@ -367,3 +367,18 @@ export interface StatSeries {
 export interface StatSeriesPair { worldbank: StatSeries; imf: StatSeries | null; }
 
 export interface ArticleEdit { title: string; lead: string; body_markdown: string; key_points: string[]; social_post: string; }
+
+/** Activité de la plateforme par région et contenus truqués (données fictives tant que `demo` est vrai). */
+export interface RegionActivity {
+  code: string; name: string; capital: string; population: number;
+  analyses: number; verifications: number; members: number; rate_per_100k: number; trend_pct: number | null;
+  media_analysed: number; deepfakes: number; deepfake_rate: number;
+}
+export interface DeepfakeKind { kind: string; label: string; count: number; share: number; }
+export interface DeepfakeMonth { month: string; analysed: number; flagged: number; rate: number; }
+export interface PlatformActivity {
+  demo: boolean; period_days: number; generated_on: string;
+  totals: { analyses: number; verifications: number; members: number; rate_per_100k: number;
+            media_analysed: number; deepfakes: number; deepfake_rate: number };
+  regions: RegionActivity[]; deepfake_by_kind: DeepfakeKind[]; deepfake_monthly: DeepfakeMonth[];
+}

@@ -88,22 +88,27 @@
                         android:textSize="20sp"
                         android:textStyle="bold"/>
                     <TextView
-                        android:id="@+id/tvReport"
+                        android:id="@+id/tvConsensus"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:textAppearance="@style/TextAppearance.Hoe.Body"
-                        android:textIsSelectable="true"/>
-                    <ImageView
-                        android:id="@+id/ivPhoto"
-                        android:layout_width="match_parent"
+                        android:layout_marginTop="2dp"
+                        android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnDispute"
+                        style="@style/Hoe.TextButton"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:adjustViewBounds="true"
-                        android:contentDescription="@string/verif_photo"
+                        android:text="@string/verif_dispute"
                         android:visibility="gone"/>
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Constats certifiés -->
+            <LinearLayout
+                android:id="@+id/layoutReports"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"/>
 
             <!-- Destinataire : accepter ou refuser -->
             <TextView
@@ -217,6 +222,12 @@
                             android:maxLength="4000"
                             android:minLines="3"/>
                     </com.google.android.material.textfield.TextInputLayout>
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="6dp"
+                        android:text="@string/verif_certified_hint"
+                        android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
                     <ImageView
                         android:id="@+id/ivReportPhoto"
                         android:layout_width="match_parent"
@@ -235,14 +246,6 @@
                             android:layout_height="wrap_content"
                             android:text="@string/verif_take_photo"
                             app:icon="@drawable/ic_camera"
-                            app:iconTint="@color/primary"/>
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btnPickPhoto"
-                            style="@style/Hoe.TextButton"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/verif_pick_photo"
-                            app:icon="@drawable/ic_image"
                             app:iconTint="@color/primary"/>
                     </LinearLayout>
                     <com.google.android.material.button.MaterialButton

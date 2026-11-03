@@ -129,6 +129,9 @@ public interface ApiService {
     @GET("stats/madagascar")
     Call<List<StatSeries>> statsMadagascar();
 
+    @GET("stats/activity")
+    Call<PlatformActivity> statsActivity();
+
     @GET("stats/compare")
     Call<List<StatSeries>> statsCompare(@Query("indicator") String indicator);
 
@@ -197,14 +200,20 @@ public interface ApiService {
     @POST("verifications/{id}/cancel")
     Call<Verification> cancelVerification(@Path("id") String id);
 
+    @POST("verifications/{id}/capture")
+    Call<JsonObject> captureToken(@Path("id") String id);
+
+    /** Constat certifié : jeton de prise de vue, position au moment du constat (jamais conservée). */
     @Multipart
     @POST("verifications/{id}/report")
     Call<Verification> reportVerification(
             @Path("id") String id,
-            @Part("outcome") RequestBody outcome,
-            @Part("report") RequestBody report,
+            @PartMap Map<String, RequestBody> fields,
             @Part MultipartBody.Part photo
     );
+
+    @POST("verifications/{id}/dispute")
+    Call<Verification> disputeVerification(@Path("id") String id);
 
     @GET("verifications/notifications")
     Call<List<AppNotification>> notifications(@Query("undelivered") boolean undelivered);

@@ -200,6 +200,75 @@
     }
   </div>
 
+  <!-- Activité de la plateforme par région (données fictives) -->
+  <h2 class="section-label"><app-icon name="pin" [size]="15" /> {{ 'Activité de la plateforme par région' | t }}
+    @if (activity()?.demo) { <span class="demo">{{ 'Données fictives de démonstration' | t }}</span> }
+  </h2>
+  @if (activityError()) {
+    <p class="error-box" role="alert">{{ activityError() }}</p>
+  } @else if (activity(); as a) {
+    <div class="stat-grid">
+      <div class="stat"><b>{{ int(a.totals.analyses) }}</b><span>{{ 'analyses sur {n} jours' | t: { n: a.period_days } }}</span></div>
+      <div class="stat"><b>{{ dec(a.totals.rate_per_100k) }}</b><span>{{ 'analyses pour 100 000 habitants' | t }}</span></div>
+      <div class="stat"><b>{{ int(a.totals.verifications) }}</b><span>{{ 'vérifications sur le terrain' | t }}</span></div>
+      <div class="stat"><b>{{ int(a.totals.members) }}</b><span>{{ 'membres actifs' | t }}</span></div>
+    </div>
+    <div class="reg-head">
+      <div class="tabs" role="tablist" [attr.aria-label]="'Classer les régions' | t">
+        <button type="button" role="tab" [class.on]="regionSort() === 'rate'" [attr.aria-selected]="regionSort() === 'rate'" (click)="regionSort.set('rate')">{{ 'Taux d’activité' | t }}</button>
+        <button type="button" role="tab" [class.on]="regionSort() === 'analyses'" [attr.aria-selected]="regionSort() === 'analyses'" (click)="regionSort.set('analyses')">{{ 'Volume' | t }}</button>
+        <button type="button" role="tab" [class.on]="regionSort() === 'deepfake'" [attr.aria-selected]="regionSort() === 'deepfake'" (click)="regionSort.set('deepfake')">{{ 'Taux de deepfakes' | t }}</button>
+      </div>
+      <p class="muted">{{ regionSort() === 'rate' ? ('Analyses pour 100 000 habitants, 30 derniers jours.' | t)
+        : regionSort() === 'analyses' ? ('Nombre d’analyses, 30 derniers jours.' | t)
+        : ('Part des images, sons et vidéos analysés repérés comme truqués.' | t) }}</p>
+    </div>
+    <ol class="reg">
+      @for (r of regions().rows; track r.code; let i = $index) {
+      <li [class.top]="i < 3">
+        <span class="r-rank fig">{{ i + 1 }}</span>
+        <span class="r-name"><b>{{ r.name }}</b><small>{{ r.capital }} · {{ int(r.analyses) }} {{ 'analyses' | t }} · {{ int(r.verifications) }} {{ 'sur le terrain' | t }}</small></span>
+        <span class="r-track" aria-hidden="true"><i [class.fake]="regionSort() === 'deepfake'" [style.width.%]="(regionValue(r) / regions().max) * 100"></i></span>
+        <span class="r-val fig">{{ regionSort() === 'analyses' ? int(r.analyses) : dec(regionValue(r)) }}<small>{{ regionSort() === 'deepfake' ? '%' : regionSort() === 'rate' ? '/100k' : '' }}</small></span>
+        @if (r.trend_pct !== null && regionSort() !== 'deepfake') {
+          <span class="r-trend" [class.up]="r.trend_pct > 0" [class.down]="r.trend_pct < 0"
+                [attr.aria-label]="'Évolution sur un mois : {p} %' | t: { p: dec(r.trend_pct) }">{{ r.trend_pct > 0 ? '▲' : r.trend_pct < 0 ? '▼' : '=' }} {{ dec(r.trend_pct) }} %</span>
+        } @else { <span class="r-trend">{{ r.deepfakes }}/{{ r.media_analysed }}</span> }
+      </li>
+      }
+    </ol>
+
+    <!-- Contenus truqués repérés -->
+    <h2 class="section-label"><app-icon name="alert" [size]="15" /> {{ 'Contenus truqués repérés' | t }}
+      @if (a.demo) { <span class="demo">{{ 'Données fictives de démonstration' | t }}</span> }
+    </h2>
+    <div class="fakes">
+      <div class="f-head">
+        <b class="fig f-rate">{{ dec(a.totals.deepfake_rate) }}<small>%</small></b>
+        <p>{{ 'des images, sons et vidéos analysés en {n} jours ont été repérés comme générés ou truqués ({f} sur {m}).' | t: { n: a.period_days, f: int(a.totals.deepfakes), m: int(a.totals.media_analysed) } }}</p>
+        <ul class="kinds">
+          @for (k of a.deepfake_by_kind; track k.kind) {
+          <li><span>{{ k.label | t }}</span><span class="k-track"><i [style.width.%]="k.share"></i></span><b class="fig">{{ dec(k.share) }} %</b></li>
+          }
+        </ul>
+      </div>
+      <figure class="months">
+        <figcaption>{{ 'Taux mensuel de contenus truqués (%), sur 12 mois' | t }}</figcaption>
+        <div class="cols" role="img" [attr.aria-label]="'Taux mensuel de contenus truqués' | t">
+          @for (m of monthly(); track m.month) {
+          <div class="col" [class.last]="m.last">
+            <span class="c-val fig">{{ dec(m.rate) }}</span>
+            <span class="c-bar"><i [style.height.%]="m.h"></i></span>
+            <span class="c-m" [title]="m.month">{{ m.name | t }}@if (m.year) {<b>{{ m.year }}</b>}</span>
+          </div>
+          }
+        </div>
+      </figure>
+    </div>
+  } @else {
+    <div class="chart-skel short" aria-busy="true"></div>
+  }
+
   <p class="muted outro">
     {{ 'Pour un chiffre plus récent ou plus fin (région, district), contactez l’' | t }}<a routerLink="/sources-officielles">{{ 'INSTAT et les autres sources officielles' | t }}</a>.
   </p>

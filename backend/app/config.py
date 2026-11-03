@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     verification_hours: int = 24  # durée de vie d'une demande sans preneur
     location_max_age_minutes: int = 120  # une position plus ancienne n'est plus prise en compte
     max_open_verifications: int = 5  # demandes ouvertes simultanées par compte
+    verification_on_site_m: int = 300  # distance maximale au lieu pour un constat « sur place »
+    verification_max_accuracy_m: int = 150  # précision GPS minimale exigée
+    capture_token_minutes: int = 20  # délai entre l'ouverture de l'appareil photo et l'envoi
 
     # MCP
     mcp_mode: str = "mcp"  # "mcp" ou "direct"

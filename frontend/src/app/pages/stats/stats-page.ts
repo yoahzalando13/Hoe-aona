@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, errorMessage } from '../../core/api';
 import { formatNumber } from '../../core/format';
-import { StatCatalog, StatIndicator, StatPoint, StatSeries, StatSeriesPair } from '../../core/models';
+import { PlatformActivity, RegionActivity, StatCatalog, StatIndicator, StatPoint, StatSeries, StatSeriesPair } from '../../core/models';
 import { Icon } from '../../shared/icon';
 import { TPipe, t } from '../../core/i18n';
 
@@ -46,6 +46,33 @@ export class StatsPage {
   protected readonly hoverBar = signal<string | null>(null);
   protected readonly showTable = signal(false);
   protected readonly notice = signal<string | null>(null);
+
+  /** Activité par région et contenus truqués (données fictives de démonstration, signalées comme telles). */
+  protected readonly activity = signal<PlatformActivity | null>(null);
+  protected readonly activityError = signal<string | null>(null);
+  protected readonly regionSort = signal<'rate' | 'analyses' | 'deepfake'>('rate');
+  protected readonly regions = computed(() => {
+    const a = this.activity();
+    if (!a) return { rows: [] as RegionActivity[], max: 1 };
+    const key = { rate: 'rate_per_100k', analyses: 'analyses', deepfake: 'deepfake_rate' }[this.regionSort()] as keyof RegionActivity;
+    const rows = [...a.regions].sort((x, y) => (y[key] as number) - (x[key] as number));
+    return { rows, max: Math.max(...rows.map((r) => r[key] as number), 1), key };
+  });
+  protected readonly monthly = computed(() => {
+    const months = this.activity()?.deepfake_monthly ?? [];
+    const max = Math.max(...months.map((m) => m.rate), 1);
+    return months.map((m, i) => {
+      const [name, yy] = m.month.split(' ');
+      // Nom du mois seul ; l'année sous le premier mois et sous janvier.
+      return { ...m, name, year: i === 0 || name.startsWith('janv') ? `20${yy}` : '', h: (m.rate / max) * 100,
+               last: i === months.length - 1 };
+    });
+  });
+  protected regionValue(r: RegionActivity): number {
+    return { rate: r.rate_per_100k, analyses: r.analyses, deepfake: r.deepfake_rate }[this.regionSort()];
+  }
+  protected int(n: number): string { return new Intl.NumberFormat(document.documentElement.lang || 'fr').format(n); }
+  protected dec(n: number): string { return n.toLocaleString(document.documentElement.lang || 'fr', { maximumFractionDigits: 1 }); }
 
   protected readonly indicators = computed(() => {
     const cat = this.catalog();
@@ -128,6 +155,10 @@ export class StatsPage {
         this.compareWith.set(cat.neighbours);
       },
       error: (err) => this.seriesError.set(errorMessage(err)),
+    });
+    this.api.statsActivity().subscribe({
+      next: (a) => this.activity.set(a),
+      error: (err) => this.activityError.set(errorMessage(err)),
     });
     this.api.statsMadagascar().subscribe({
       next: (items) => this.dashboard.set(items),

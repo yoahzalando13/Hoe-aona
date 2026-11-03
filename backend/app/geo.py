@@ -5,6 +5,7 @@ Seule la base calcule qui se trouve dans le rayon d'une demande (ST_DWithin sur 
 """
 from __future__ import annotations
 
+import json
 import logging
 import threading
 import uuid
@@ -57,12 +58,43 @@ CREATE TABLE IF NOT EXISTS notifications (
     read_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, created_at DESC);
+-- Constats certifiés : un ou deux par demande (second avis indépendant). Aucune coordonnée du vérificateur.
+ALTER TABLE verification_requests ADD COLUMN IF NOT EXISTS required_reports INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE verification_requests ADD COLUMN IF NOT EXISTS consensus TEXT;
+CREATE TABLE IF NOT EXISTS verification_reports (
+    id TEXT PRIMARY KEY,
+    request_id TEXT NOT NULL REFERENCES verification_requests(id) ON DELETE CASCADE,
+    verifier_id TEXT NOT NULL,
+    outcome TEXT NOT NULL,
+    report TEXT NOT NULL DEFAULT '',
+    photo_path TEXT,
+    photo_sha256 TEXT,
+    capture_verified BOOLEAN NOT NULL DEFAULT false,
+    on_site BOOLEAN NOT NULL DEFAULT false,
+    distance_bucket TEXT NOT NULL DEFAULT 'inconnue',
+    mock_location BOOLEAN NOT NULL DEFAULT false,
+    received_at timestamptz NOT NULL DEFAULT now(),
+    certificate JSONB NOT NULL,
+    signature TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_reports_request ON verification_reports(request_id, received_at);
+CREATE INDEX IF NOT EXISTS idx_reports_hash ON verification_reports(photo_sha256);
+-- Jeton de prise de vue à usage unique : la photo doit être prise après son émission.
+CREATE TABLE IF NOT EXISTS capture_tokens (
+    token TEXT PRIMARY KEY,
+    request_id TEXT NOT NULL REFERENCES verification_requests(id) ON DELETE CASCADE,
+    verifier_id TEXT NOT NULL,
+    issued_at timestamptz NOT NULL DEFAULT now(),
+    used_at timestamptz
+);
 """
 
 # Colonnes renvoyées pour une demande : le point visé est exposé, jamais la position d'un compte.
 _REQUEST_COLS = ("id, requester_id, analysis_id, claim, details, place_label, ST_Y(place::geometry) AS latitude,"
                  " ST_X(place::geometry) AS longitude, radius_m, status, verifier_id, accepted_at, outcome, report,"
-                 " photo_path, completed_at, created_at, expires_at")
+                 " photo_path, completed_at, created_at, expires_at, required_reports, consensus")
+_REPORT_COLS = ("id, request_id, verifier_id, outcome, report, photo_path, photo_sha256, capture_verified, on_site,"
+                " distance_bucket, mock_location, received_at, certificate, signature")
 
 
 def _point(latitude: float, longitude: float) -> tuple[float, float]:
@@ -180,7 +212,9 @@ class GeoStore:
 
     def list_by_verifier(self, user_id: str, limit: int = 50) -> list[dict[str, Any]]:
         return self._exec(f"SELECT {_REQUEST_COLS} FROM verification_requests WHERE verifier_id = %s"
-                          " ORDER BY (status = 'accepted') DESC, created_at DESC LIMIT %s", (user_id, limit))
+                          " OR id IN (SELECT request_id FROM verification_reports WHERE verifier_id = %s)"
+                          " ORDER BY (status = 'accepted' AND verifier_id = %s) DESC, created_at DESC LIMIT %s",
+                          (user_id, user_id, user_id, limit))
 
     def count_open_by_requester(self, user_id: str) -> int:
         rows = self._exec("SELECT count(*) AS n FROM verification_requests WHERE requester_id = %s"
@@ -225,17 +259,107 @@ class GeoStore:
             return True
         return self._transaction(steps)
 
-    def complete(self, request_id: str, verifier_id: str, outcome: str, report: str,
-                 photo_path: str | None) -> bool:
+    # ---------- constats certifiés ----------
+    def issue_capture_token(self, request_id: str, verifier_id: str) -> str:
+        token = uuid.uuid4().hex
+        self._exec("INSERT INTO capture_tokens (token, request_id, verifier_id) VALUES (%s, %s, %s)",
+                   (token, request_id, verifier_id))
+        return token
+
+    def consume_capture_token(self, token: str, request_id: str, verifier_id: str,
+                              max_age_minutes: int) -> datetime | None:
+        """Jeton valide, émis pour ce vérificateur et cette demande, utilisé une seule fois : heure d'émission."""
+        rows = self._exec(
+            "UPDATE capture_tokens SET used_at = now() WHERE token = %s AND request_id = %s AND verifier_id = %s"
+            " AND used_at IS NULL AND issued_at >= now() - make_interval(mins => %s) RETURNING issued_at",
+            (token, request_id, verifier_id, max_age_minutes))
+        return rows[0]["issued_at"] if rows else None
+
+    def distance_to_place(self, request_id: str, latitude: float, longitude: float) -> float | None:
+        """Distance en mètres entre une position et le lieu de la demande. La position n'est pas enregistrée."""
+        rows = self._exec(
+            "SELECT ST_Distance(place, ST_SetSRID(ST_MakePoint(%s, %s), 4326)::geography) AS d"
+            " FROM verification_requests WHERE id = %s", (*_point(latitude, longitude), request_id))
+        return rows[0]["d"] if rows else None
+
+    def has_report(self, request_id: str, user_id: str) -> bool:
+        return bool(self._exec("SELECT 1 FROM verification_reports WHERE request_id = %s AND verifier_id = %s",
+                               (request_id, user_id)))
+
+    def list_reports(self, request_id: str) -> list[dict[str, Any]]:
+        return self._exec(f"SELECT {_REPORT_COLS} FROM verification_reports WHERE request_id = %s"
+                          " ORDER BY received_at", (request_id,))
+
+    def get_report(self, report_id: str) -> dict[str, Any] | None:
+        rows = self._exec(f"SELECT {_REPORT_COLS} FROM verification_reports WHERE id = %s", (report_id,))
+        return rows[0] if rows else None
+
+    def reports_by_hash(self, sha256: str) -> list[dict[str, Any]]:
+        return self._exec(f"SELECT {_REPORT_COLS} FROM verification_reports WHERE photo_sha256 = %s", (sha256,))
+
+    @staticmethod
+    def _exclude_verifier(conn, request_id: str, user_id: str) -> None:
+        """Un vérificateur ne reçoit plus la demande (renoncement, ou constat déjà rendu)."""
+        conn.execute("INSERT INTO verification_recipients (request_id, user_id, declined) VALUES (%s, %s, true)"
+                     " ON CONFLICT (request_id, user_id) DO UPDATE SET declined = true", (request_id, user_id))
+
+    def _reopen(self, conn, request_id: str, requester_id: str, hours: int, max_age_minutes: int) -> None:
+        """Second avis : la demande repart vers les membres proches, sauf le demandeur et les vérificateurs passés."""
+        conn.execute(
+            "UPDATE verification_requests SET status = 'open', verifier_id = NULL, accepted_at = NULL,"
+            " completed_at = NULL, consensus = NULL, required_reports = 2,"
+            " expires_at = now() + make_interval(hours => %s) WHERE id = %s", (hours, request_id))
+        previous = [r["verifier_id"] for r in conn.execute(
+            "SELECT verifier_id FROM verification_reports WHERE request_id = %s", (request_id,)).fetchall()]
+        self._notify_nearby(conn, request_id, exclude=[requester_id, *previous], max_age_minutes=max_age_minutes)
+
+    def add_report(self, request_id: str, verifier_id: str, report: dict[str, Any], needs_second: bool,
+                   hours: int, max_age_minutes: int) -> str | None:
+        """Enregistre un constat. Renvoie le nouvel état ('open' si un second avis est demandé, 'completed')."""
+        def steps(conn):
+            req = conn.execute(
+                "SELECT requester_id, required_reports FROM verification_requests"
+                " WHERE id = %s AND status = 'accepted' AND verifier_id = %s FOR UPDATE",
+                (request_id, verifier_id)).fetchone()
+            if not req:
+                return None
+            conn.execute(
+                "INSERT INTO verification_reports (id, request_id, verifier_id, outcome, report, photo_path,"
+                " photo_sha256, capture_verified, on_site, distance_bucket, mock_location, received_at,"
+                " certificate, signature) VALUES (%(id)s, %(request_id)s, %(verifier_id)s, %(outcome)s, %(report)s,"
+                " %(photo_path)s, %(photo_sha256)s, %(capture_verified)s, %(on_site)s, %(distance_bucket)s,"
+                " %(mock_location)s, %(received_at)s, %(certificate)s, %(signature)s)",
+                {**report, "certificate": json.dumps(report["certificate"], ensure_ascii=False)})
+            self._exclude_verifier(conn, request_id, verifier_id)
+            reports = conn.execute("SELECT outcome, report, photo_path FROM verification_reports"
+                                   " WHERE request_id = %s ORDER BY received_at", (request_id,)).fetchall()
+            if needs_second and len(reports) < 2:
+                self._reopen(conn, request_id, req["requester_id"], hours, max_age_minutes)
+                self._add_notification(conn, req["requester_id"], "verification_second", request_id)
+                return "open"
+            if len(reports) >= 2:
+                agreed = len({r["outcome"] for r in reports}) == 1
+                consensus, outcome = ("agreed", reports[0]["outcome"]) if agreed else ("divergent", "indetermine")
+            else:
+                consensus, outcome = "single", reports[0]["outcome"]
+            latest = reports[-1]
+            conn.execute(
+                "UPDATE verification_requests SET status = 'completed', outcome = %s, consensus = %s, report = %s,"
+                " photo_path = %s, completed_at = now() WHERE id = %s",
+                (outcome, consensus, latest["report"], latest["photo_path"], request_id))
+            self._add_notification(conn, req["requester_id"], "verification_completed", request_id)
+            return "completed"
+        return self._transaction(steps)
+
+    def dispute(self, request_id: str, requester_id: str, hours: int, max_age_minutes: int) -> bool:
+        """Le demandeur conteste un constat unique : un second vérificateur indépendant est sollicité."""
         def steps(conn):
             row = conn.execute(
-                "UPDATE verification_requests SET status = 'completed', outcome = %s, report = %s, photo_path = %s,"
-                " completed_at = now() WHERE id = %s AND status = 'accepted' AND verifier_id = %s"
-                " RETURNING requester_id",
-                (outcome, report, photo_path, request_id, verifier_id)).fetchone()
+                "SELECT 1 FROM verification_requests WHERE id = %s AND requester_id = %s AND status = 'completed'"
+                " AND consensus = 'single' FOR UPDATE", (request_id, requester_id)).fetchone()
             if not row:
                 return False
-            self._add_notification(conn, row["requester_id"], "verification_completed", request_id)
+            self._reopen(conn, request_id, requester_id, hours, max_age_minutes)
             return True
         return self._transaction(steps)
 

@@ -114,6 +114,19 @@ Le vérificateur peut renoncer : la demande est alors proposée de nouveau. Le d
 
 `docker compose up` démarre aussi un conteneur `postgis/postgis`. Les notifications arrivent par interrogation : toutes les 30 s quand l'application est ouverte, toutes les 15 min sinon (WorkManager). Application fermée, la position n'est mise à jour que si l'utilisateur accorde la localisation en arrière-plan.
 
+**Constat certifié**
+
+Le constat est conçu pour résister à un vérificateur qui tricherait.
+
+- **Capture verrouillée** : la photo se prend avec l'appareil photo, depuis l'application ; la galerie n'est pas proposée. Avant la prise de vue, l'application demande au serveur un jeton à usage unique (`POST /api/verifications/{id}/capture`). La photo doit arriver dans les `CAPTURE_TOKEN_MINUTES`, avec des données EXIF d'appareil photo et une heure de prise de vue postérieure au jeton.
+- **Présence sur place** : la position au moment du constat sert à calculer la distance au lieu avec PostGIS. Seule une tranche est conservée (« moins de 150 m »), jamais les coordonnées. Il faut être à moins de `VERIFICATION_ON_SITE_M`, avec une précision GPS suffisante et une position non simulée.
+- **Certificat signé** : l'empreinte SHA-256 de la photo, les contrôles et le verdict sont signés en Ed25519 par le serveur. La clé est créée dans `data/attestation_ed25519.pem`, et la clé publique est servie par `GET /api/attestations/public-key`. `POST /api/attestations/verify` retrouve le certificat d'une photo. Une photo retouchée ou recadrée n'a plus la même empreinte et n'est donc pas reconnue.
+- **Second avis indépendant** : si un contrôle échoue, ou si le demandeur conteste (`POST /api/verifications/{id}/dispute`), la demande repart vers un autre membre proche. Il ne voit pas le premier constat avant de rendre le sien. Le résultat final est « confirmé par deux vérificateurs » ou « constats divergents ».
+
+Il s'agit d'un certificat inspiré de C2PA, pas d'une implémentation C2PA. L'EXIF peut être falsifié par un utilisateur averti : la défense repose sur la combinaison des contrôles et sur le second avis.
+
+**Activité par région et deepfakes (données fictives)** : `GET /api/stats/activity` alimente, dans la page Statistiques (web et mobile), le taux d'activité des 23 régions (analyses pour 100 000 habitants, volume, tendance sur un mois) et le taux de contenus truqués repérés (par type et par mois). **Ces chiffres sont générés** par `app/services/demo_activity.py`, de façon déterministe. L'API les marque `demo: true` et l'interface affiche « Données fictives de démonstration ». Il faudra les remplacer par un calcul sur les vraies analyses avant toute mise en service.
+
 **Construire l'application** : ouvrez `FrontendMobile/` dans Android Studio. Par défaut, l'application vise `http://10.0.2.2:8000/` (la machine hôte vue depuis l'émulateur). Pour un téléphone, changez l'adresse dans « Serveur » sur l'écran de connexion, ou construisez avec `-PhoeApiUrl=http://IP:8000/`. Le HTTP en clair n'est autorisé qu'en debug.
 
 ## Tests de raisonnement

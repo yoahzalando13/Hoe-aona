@@ -47,6 +47,7 @@ public final class VerificationNotifier {
             case "verification_request": return c.getString(R.string.notif_request_title);
             case "verification_accepted": return c.getString(R.string.notif_accepted_title);
             case "verification_released": return c.getString(R.string.notif_released_title);
+            case "verification_second": return c.getString(R.string.notif_second_title);
             case "verification_completed": return c.getString(R.string.notif_completed_title);
             case "verification_cancelled": return c.getString(R.string.notif_cancelled_title);
             default: return c.getString(R.string.app_name);

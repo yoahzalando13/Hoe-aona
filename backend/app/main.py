@@ -14,7 +14,7 @@ from .db import get_db
 from .geo import get_geo
 from .mcp.gateway import get_gateway
 from .routers import (admin, analyses, auth as auth_router, settings as settings_router, social, sources, stats, system,
-                      verifications)
+                      verifications, attestations)
 from .services.pipeline import load_preferences
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -53,6 +53,7 @@ app.include_router(stats.router)
 app.include_router(settings_router.router)
 app.include_router(system.router)
 app.include_router(verifications.router)
+app.include_router(attestations.router)
 
 # En production, le build Angular peut être servi par FastAPI (une seule origine).
 _dist = get_settings().frontend_dist

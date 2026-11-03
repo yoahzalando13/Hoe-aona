@@ -7,16 +7,19 @@ est prévenu. Les positions des comptes ne sont jamais renvoyées : ni distance,
 from __future__ import annotations
 
 import shutil
+import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 
+from .. import attestation
 from ..auth import current_user
 from ..config import get_settings
 from ..db import get_db
 from ..geo import GeoStore, get_geo
-from ..schemas import (LocationIn, LocationStatus, NotificationOut, NotificationRead, VerificationIn,
+from ..schemas import (LocationIn, LocationStatus, NotificationOut, NotificationRead, ReportOut, VerificationIn,
                        VerificationOut, VerificationOutcome)
 from .social import IMAGE_TYPES, MAX_IMAGE_MB
 
@@ -39,12 +42,30 @@ def geo() -> GeoStore:
     return store
 
 
-def _to_out(row: dict[str, Any], viewer_id: str) -> VerificationOut:
+def _report_out(r: dict[str, Any]) -> ReportOut:
+    verifier = get_db().get_user(r["verifier_id"]) or {}
+    return ReportOut(
+        **{k: r[k] for k in ("id", "verifier_id", "outcome", "report", "photo_sha256", "capture_verified", "on_site",
+                             "distance_bucket", "mock_location", "received_at")},
+        verifier_name=verifier.get("display_name", "?"),
+        photo_url=f"/api/verifications/{r['request_id']}/reports/{r['id']}/photo" if r.get("photo_path") else None,
+        certified=attestation.verify(r["certificate"], r["signature"]),
+        certificate_url=f"/api/attestations/{r['id']}",
+    )
+
+
+def _to_out(row: dict[str, Any], viewer_id: str, store: GeoStore | None = None) -> VerificationOut:
     db = get_db()
+    store = store or get_geo()
     requester = db.get_user(row["requester_id"]) or {}
     verifier = db.get_user(row["verifier_id"]) if row.get("verifier_id") else None
+    reports = store.list_reports(row["id"]) if store else []
+    mine = any(r["verifier_id"] == viewer_id for r in reports)
     role = ("requester" if row["requester_id"] == viewer_id
-            else "verifier" if row.get("verifier_id") == viewer_id else "recipient")
+            else "verifier" if row.get("verifier_id") == viewer_id else "reporter" if mine else "recipient")
+    # Second avis indépendant : un vérificateur ne voit que son propre constat avant la clôture.
+    if role != "requester" and row["status"] != "completed":
+        reports = [r for r in reports if r["verifier_id"] == viewer_id]
     return VerificationOut(
         **{k: row[k] for k in ("id", "created_at", "expires_at", "status", "claim", "details", "place_label",
                                "latitude", "longitude", "radius_m", "analysis_id", "requester_id", "verifier_id",
@@ -54,6 +75,9 @@ def _to_out(row: dict[str, Any], viewer_id: str) -> VerificationOut:
         verifier_name=verifier["display_name"] if verifier else None,
         photo_url=f"/api/verifications/{row['id']}/photo" if row.get("photo_path") else None,
         role=role,
+        required_reports=row.get("required_reports") or 1,
+        consensus=row.get("consensus"),
+        reports=[_report_out(r) for r in reports],
     )
 
 
@@ -61,6 +85,7 @@ def _visible(store: GeoStore, request_id: str, user: dict[str, Any]) -> dict[str
     """Demandeur et vérificateur voient la demande ; un destinataire seulement tant qu'elle est ouverte."""
     row = store.get_request(request_id)
     if row and (user["id"] in (row["requester_id"], row["verifier_id"])
+                or store.has_report(request_id, user["id"])
                 or (row["status"] == "open" and store.is_recipient(request_id, user["id"]))):
         return row
     raise HTTPException(404, "Demande introuvable ou déjà prise en charge")
@@ -153,6 +178,8 @@ async def accept(request_id: str, user: dict[str, Any] = Depends(current_user), 
     row = _visible(store, request_id, user)
     if row["requester_id"] == user["id"]:
         raise HTTPException(409, "Vous ne pouvez pas vérifier votre propre demande")
+    if store.has_report(request_id, user["id"]):
+        raise HTTPException(409, "Vous avez déjà rendu un constat : le second avis doit venir d'une autre personne")
     if not store.accept(request_id, user["id"]):
         raise HTTPException(409, "Cette demande a déjà été acceptée par quelqu'un d'autre")
     return _to_out(store.get_request(request_id), user["id"])
@@ -171,31 +198,119 @@ async def release(request_id: str, user: dict[str, Any] = Depends(current_user),
     return _to_out(store.get_request(request_id), user["id"])
 
 
+@router.post("/{request_id}/capture")
+async def capture_token(request_id: str, user: dict[str, Any] = Depends(current_user), store: GeoStore = Depends(geo)):
+    """Jeton à usage unique demandé à l'ouverture de l'appareil photo : la photo devra être prise après."""
+    row = _visible(store, request_id, user)
+    if row["verifier_id"] != user["id"] or row["status"] != "accepted":
+        raise HTTPException(409, "Seul le vérificateur d'une demande acceptée peut photographier le constat")
+    minutes = get_settings().capture_token_minutes
+    return {"token": store.issue_capture_token(request_id, user["id"]), "valid_minutes": minutes}
+
+
+def _parse_device_time(raw: str) -> datetime | None:
+    try:
+        value = datetime.fromisoformat(raw.strip())
+        return value if value.tzinfo else None
+    except ValueError:
+        return None
+
+
 @router.post("/{request_id}/report", response_model=VerificationOut)
 async def report(request_id: str, outcome: VerificationOutcome = Form(...), report: str = Form(""),
-                 photo: UploadFile | None = File(None), user: dict[str, Any] = Depends(current_user),
-                 store: GeoStore = Depends(geo)):
-    """Le vérificateur confirme si l'information est correcte, incorrecte ou impossible à établir sur place."""
+                 photo: UploadFile | None = File(None), capture_token: str = Form(""),
+                 latitude: float | None = Form(None), longitude: float | None = Form(None),
+                 accuracy: float | None = Form(None), mock_location: bool = Form(False), device_time: str = Form(""),
+                 user: dict[str, Any] = Depends(current_user), store: GeoStore = Depends(geo)):
+    """Constat certifié : correct, incorrect ou impossible à établir sur place.
+
+    Contrôles : photo prise après l'émission du jeton (EXIF d'appareil photo), présence à moins de
+    `VERIFICATION_ON_SITE_M` du lieu (position non simulée, précise), empreinte SHA-256 signée.
+    Si un contrôle échoue, un second vérificateur indépendant est sollicité.
+    """
+    s = get_settings()
     row = _visible(store, request_id, user)
     if row["verifier_id"] != user["id"] or row["status"] != "accepted":
         raise HTTPException(409, "Seul le vérificateur d'une demande acceptée peut rendre son constat")
     if len(report) > 4000:
         raise HTTPException(413, "Constat trop long (4 000 caractères maximum)")
-    photo_path = None
+
+    report_id = uuid.uuid4().hex[:16]
+    received_at = datetime.now(timezone.utc)
+    photo_path = photo_sha = None
+    capture = {"token": False, "exif_camera": False, "taken_after_token": False, "device_clock_ok": False}
     if photo is not None and photo.filename:
         ext = IMAGE_TYPES.get((photo.content_type or "").split(";")[0])
         if not ext:
             raise HTTPException(415, "Image JPEG, PNG, WebP ou GIF attendue")
-        dest = get_settings().data_dir / "verifications" / f"{request_id}{ext}"
+        dest = s.data_dir / "verifications" / f"{request_id}-{report_id}{ext}"
         with dest.open("wb") as fh:
             shutil.copyfileobj(photo.file, fh)
         if dest.stat().st_size > MAX_IMAGE_MB * 1024 * 1024:
             dest.unlink(missing_ok=True)
             raise HTTPException(413, f"Photo trop lourde ({MAX_IMAGE_MB} Mo maximum)")
-        photo_path = dest.name
-    if not store.complete(request_id, user["id"], outcome, report.strip(), photo_path):
+        photo_path, photo_sha = dest.name, attestation.sha256_file(dest)
+        issued = store.consume_capture_token(capture_token, request_id, user["id"], s.capture_token_minutes) \
+            if capture_token else None
+        device = _parse_device_time(device_time)
+        camera, taken = attestation.exif_capture(dest)
+        capture["token"] = issued is not None
+        capture["exif_camera"] = camera
+        capture["device_clock_ok"] = device is not None and abs((device - received_at).total_seconds()) <= 20 * 60
+        if issued and device and taken:
+            # L'EXIF est en heure locale sans fuseau : on le compare dans le fuseau du téléphone.
+            issued_local = issued.astimezone(device.tzinfo).replace(tzinfo=None)
+            device_local = device.replace(tzinfo=None)
+            capture["taken_after_token"] = issued_local - timedelta(minutes=2) <= taken <= device_local + timedelta(minutes=2)
+    capture_verified = all(capture.values())
+
+    distance = None
+    if latitude is not None and longitude is not None:
+        distance = store.distance_to_place(request_id, latitude, longitude)  # position jamais enregistrée
+    precise = accuracy is not None and accuracy <= s.verification_max_accuracy_m
+    on_site = distance is not None and distance <= s.verification_on_site_m and precise and not mock_location
+    bucket = attestation.distance_bucket(distance)
+
+    certificate = {
+        "version": 1, "type": "hoe-aona.constat", "key_id": attestation.key_id(),
+        "report_id": report_id, "request_id": request_id, "claim": row["claim"], "place_label": row["place_label"],
+        "outcome": outcome, "verifier": {"id": user["id"], "name": user["display_name"]},
+        "received_at": received_at.isoformat(), "photo_sha256": photo_sha,
+        "capture": capture, "location": {"on_site": on_site, "distance_bucket": bucket,
+                                         "accuracy_ok": precise, "mock": bool(mock_location)},
+    }
+    needs_second = not (photo_sha and capture_verified and on_site)
+    status = store.add_report(request_id, user["id"], {
+        "id": report_id, "request_id": request_id, "verifier_id": user["id"], "outcome": outcome,
+        "report": report.strip(), "photo_path": photo_path, "photo_sha256": photo_sha,
+        "capture_verified": capture_verified, "on_site": on_site, "distance_bucket": bucket,
+        "mock_location": bool(mock_location), "received_at": received_at,
+        "certificate": certificate, "signature": attestation.sign(certificate),
+    }, needs_second, s.verification_hours, s.location_max_age_minutes)
+    if status is None:
         raise HTTPException(409, "Cette demande n'attend plus de constat")
-    return _to_out(store.get_request(request_id), user["id"])
+    return _to_out(store.get_request(request_id), user["id"], store)
+
+
+@router.post("/{request_id}/dispute", response_model=VerificationOut)
+async def dispute(request_id: str, user: dict[str, Any] = Depends(current_user), store: GeoStore = Depends(geo)):
+    """Le demandeur conteste un constat unique : la demande repart vers un second vérificateur."""
+    s = get_settings()
+    if not store.dispute(request_id, user["id"], s.verification_hours, s.location_max_age_minutes):
+        raise HTTPException(409, "Seul un constat unique peut être contesté, par l'auteur de la demande")
+    return _to_out(store.get_request(request_id), user["id"], store)
+
+
+@router.get("/{request_id}/reports/{report_id}/photo", include_in_schema=False)
+async def report_photo(request_id: str, report_id: str, user: dict[str, Any] = Depends(current_user),
+                       store: GeoStore = Depends(geo)):
+    row = _visible(store, request_id, user)
+    rep = store.get_report(report_id)
+    if not rep or rep["request_id"] != request_id or not rep.get("photo_path"):
+        raise HTTPException(404, "Photo introuvable")
+    if rep["verifier_id"] != user["id"] and user["id"] != row["requester_id"] and row["status"] != "completed":
+        raise HTTPException(404, "Photo introuvable")
+    return _photo_file(rep["photo_path"])
 
 
 @router.post("/{request_id}/cancel", response_model=VerificationOut)
@@ -210,8 +325,12 @@ async def photo(request_id: str, user: dict[str, Any] = Depends(current_user), s
     row = _visible(store, request_id, user)
     if not row.get("photo_path"):
         raise HTTPException(404, "Aucune photo")
+    return _photo_file(row["photo_path"])
+
+
+def _photo_file(name: str) -> FileResponse:
     folder = (get_settings().data_dir / "verifications").resolve()
-    path = (folder / row["photo_path"]).resolve()
+    path = (folder / name).resolve()
     if folder not in path.parents or not path.is_file():
         raise HTTPException(404, "Photo introuvable")
     return FileResponse(path, headers={"Cache-Control": "private, max-age=86400"})

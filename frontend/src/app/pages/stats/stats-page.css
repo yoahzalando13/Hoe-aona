@@ -113,3 +113,58 @@ th:nth-child(2) { text-align: right; }
 .outro { margin: 20px 2px 0; font-size: 13px; }
 
 @keyframes pulse { 50% { opacity: .55; } }
+
+/* Activité par région : classement fileté, barre de taux, tendance mensuelle */
+.demo { margin-left: auto; font-size: 10.5px; letter-spacing: .06em; padding: 2px 7px; border: 1px dashed var(--mid); color: var(--mid); border-radius: 3px; }
+.section-label .demo { text-transform: uppercase; }
+.reg-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; margin: 18px 0 6px; }
+.reg-head .muted { font-size: 12.5px; }
+.reg { list-style: none; margin: 0; padding: 0; border-top: 2px solid var(--ink); }
+.reg li {
+  display: grid; grid-template-columns: 28px minmax(140px, 1.3fr) minmax(80px, 2fr) 84px 76px; align-items: center;
+  gap: 12px; padding: 8px 4px; border-bottom: 1px solid var(--line);
+}
+.r-rank { font-size: 15px; color: var(--ink3); text-align: right; }
+.reg li.top .r-rank { color: var(--brand); font-weight: 600; }
+.r-name { min-width: 0; display: flex; flex-direction: column; }
+.r-name b { font-size: 14px; font-weight: 500; }
+.r-name small { font-size: 11.5px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r-track { height: 10px; background: var(--soft); }
+.r-track i { display: block; height: 100%; background: var(--ink); transition: width .5s ease; }
+.reg li.top .r-track i { background: var(--brand); }
+.r-track i.fake { background: var(--mid); }
+.r-val { font-size: 19px; text-align: right; white-space: nowrap; }
+.r-val small { font-family: var(--sans); font-size: 10.5px; color: var(--ink3); margin-left: 2px; }
+.r-trend { font-size: 12px; text-align: right; color: var(--ink3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.r-trend.up { color: var(--good); }
+.r-trend.down { color: var(--bad); }
+@media (max-width: 640px) {
+  .reg li { grid-template-columns: 22px minmax(0, 1fr) 70px; grid-template-rows: auto auto; row-gap: 4px; }
+  .r-track { grid-column: 2 / 4; grid-row: 2; }
+  .r-trend { grid-column: 3; grid-row: 1; align-self: end; display: none; }
+}
+
+/* Contenus truqués : chiffre de une, répartition par type, colonnes mensuelles */
+.fakes { display: grid; gap: 24px; border-top: 2px solid var(--ink); padding-top: 14px; }
+@media (min-width: 900px) { .fakes { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: 40px; } }
+.f-rate { display: block; font-size: 72px; line-height: .95; color: var(--brand); letter-spacing: -1.5px; }
+.f-rate small { font-size: 30px; margin-left: 2px; }
+.f-head p { margin-top: 8px; font-size: 14px; color: var(--ink2); max-width: 420px; }
+.kinds { list-style: none; margin: 16px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.kinds li { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(60px, 1fr) 54px; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.k-track { height: 6px; background: var(--soft); }
+.k-track i { display: block; height: 100%; background: var(--mid); }
+.kinds b { font-size: 15px; text-align: right; }
+.months { margin: 0; }
+.months figcaption { font-size: 11.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink2); margin-bottom: 10px; }
+.cols { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; align-items: end; height: 200px; border-bottom: 1px solid var(--ink); }
+.col { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-end; height: 100%; min-width: 0; }
+.c-val { font-size: 12px; text-align: center; color: var(--ink2); margin-bottom: 3px; }
+.c-bar { flex: 0 1 150px; display: flex; align-items: flex-end; }
+.c-bar i { display: block; width: 100%; background: var(--line-strong); transition: height .5s ease; }
+.col.last .c-bar i { background: var(--brand); }
+.col.last .c-val { color: var(--brand); font-weight: 600; }
+.c-m { font-size: 10.5px; color: var(--ink3); text-align: center; white-space: nowrap; position: relative; top: 22px; height: 0; }
+.c-m b { display: block; font-weight: 600; color: var(--ink2); }
+.months { padding-bottom: 24px; }
+@media (max-width: 520px) { .c-val { font-size: 10px; } .c-m { font-size: 9px; } }

@@ -31,7 +31,14 @@ import org.osmdroid.util.GeoPoint;
 import org.osmdroid.views.MapView;
 import org.osmdroid.views.overlay.Marker;
 
+import android.os.Build;
+import com.google.gson.JsonObject;
+import okhttp3.RequestBody;
+
 import java.io.File;
+import java.time.OffsetDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Locale;
 
 /**
@@ -43,9 +50,11 @@ public class VerificationActivity extends AppCompatActivity {
 
     private String id;
     private Verification current;
-    private TextView tvStatus, tvClaim, tvDetails, tvPlace, tvPeople, tvOutcome, tvReport, tvPrivacy;
+    private TextView tvStatus, tvClaim, tvDetails, tvPlace, tvPeople, tvOutcome, tvConsensus, tvPrivacy;
     private MapView map;
-    private ImageView ivPhoto, ivReportPhoto;
+    private ImageView ivReportPhoto;
+    private LinearLayout layoutReports;
+    private String captureToken;
     private LinearLayout layoutRecipientActions, layoutVerifierActions, layoutReportForm, layoutResult;
     private MaterialButton btnCancel, btnOpenAnalysis, btnSendReport;
     private RadioGroup rgOutcome;
@@ -53,10 +62,8 @@ public class VerificationActivity extends AppCompatActivity {
     private Uri photoUri;
     private Uri cameraUri;
 
-    private final ActivityResultLauncher<String> pickPhoto = registerForActivityResult(
-            new ActivityResultContracts.GetContent(), uri -> {
-                if (uri != null) setPhoto(uri);
-            });
+    private final ActivityResultLauncher<String[]> locationPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestMultiplePermissions(), r -> launchCamera());
 
     private final ActivityResultLauncher<Uri> takePhoto = registerForActivityResult(
             new ActivityResultContracts.TakePicture(), ok -> {
@@ -77,10 +84,10 @@ public class VerificationActivity extends AppCompatActivity {
         tvPlace = findViewById(R.id.tvPlace);
         tvPeople = findViewById(R.id.tvPeople);
         tvOutcome = findViewById(R.id.tvOutcome);
-        tvReport = findViewById(R.id.tvReport);
+        tvConsensus = findViewById(R.id.tvConsensus);
+        layoutReports = findViewById(R.id.layoutReports);
         tvPrivacy = findViewById(R.id.tvPrivacy);
         map = findViewById(R.id.map);
-        ivPhoto = findViewById(R.id.ivPhoto);
         ivReportPhoto = findViewById(R.id.ivReportPhoto);
         layoutRecipientActions = findViewById(R.id.layoutRecipientActions);
         layoutVerifierActions = findViewById(R.id.layoutVerifierActions);
@@ -100,7 +107,7 @@ public class VerificationActivity extends AppCompatActivity {
         findViewById(R.id.btnDecline).setOnClickListener(v -> decline());
         findViewById(R.id.btnNavigate).setOnClickListener(v -> navigate());
         findViewById(R.id.btnRelease).setOnClickListener(v -> confirm(R.string.verif_release_confirm, this::release));
-        findViewById(R.id.btnPickPhoto).setOnClickListener(v -> pickPhoto.launch("image/*"));
+        findViewById(R.id.btnDispute).setOnClickListener(v -> confirm(R.string.verif_dispute_confirm, this::dispute));
         findViewById(R.id.btnTakePhoto).setOnClickListener(v -> openCamera());
         btnSendReport.setOnClickListener(v -> sendReport());
         btnCancel.setOnClickListener(v -> confirm(R.string.verif_cancel_confirm, this::cancelRequest));
@@ -175,8 +182,14 @@ public class VerificationActivity extends AppCompatActivity {
         if (completed) {
             tvOutcome.setText(Format.outcome(this, v.outcome));
             tvOutcome.setTextColor(getColor(Format.verdictColor(v.outcome)));
-            tvReport.setText(v.report == null || v.report.isEmpty() ? getString(R.string.verif_no_report) : v.report);
-            ImageLoader.load(ivPhoto, v.photo_url);
+            tvConsensus.setText("agreed".equals(v.consensus) ? R.string.verif_consensus_agreed
+                    : "divergent".equals(v.consensus) ? R.string.verif_consensus_divergent : R.string.verif_consensus_single);
+        }
+        findViewById(R.id.btnDispute).setVisibility(completed && requester && "single".equals(v.consensus)
+                ? View.VISIBLE : View.GONE);
+        renderReports(v);
+        if (v.required_reports > 1 && !completed && requester) {
+            tvPeople.append("\n" + getString(R.string.verif_second_pending));
         }
     }
 
@@ -251,10 +264,73 @@ public class VerificationActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    /** Constats certifiés : chaque contrôle est affiché, réussi ou non, avec l'empreinte de la photo. */
+    private void renderReports(Verification v) {
+        layoutReports.removeAllViews();
+        if (v.reports == null) return;
+        for (Verification.Report r : v.reports) {
+            View row = getLayoutInflater().inflate(R.layout.item_report, layoutReports, false);
+            ((TextView) row.findViewById(R.id.tvWho)).setText(getString(R.string.verif_report_by, r.verifier_name,
+                    Format.date(r.received_at)));
+            TextView outcome = row.findViewById(R.id.tvOutcome);
+            outcome.setText(Format.outcome(this, r.outcome));
+            Format.stamp(outcome, Format.verdictColor(r.outcome));
+            String checks = check(r.photo_sha256 != null && r.capture_verified, getString(R.string.verif_check_capture),
+                    getString(r.photo_sha256 == null ? R.string.verif_check_no_photo : R.string.verif_check_capture_ko))
+                    + "\n" + check(r.on_site, getString(R.string.verif_check_on_site, distance(r.distance_bucket)),
+                    getString(r.mock_location ? R.string.verif_check_mock : R.string.verif_check_off_site, distance(r.distance_bucket)))
+                    + "\n" + check(r.certified, getString(R.string.verif_check_signed), getString(R.string.verif_check_unsigned));
+            ((TextView) row.findViewById(R.id.tvChecks)).setText(checks);
+            TextView text = row.findViewById(R.id.tvText);
+            text.setText(r.report == null || r.report.isEmpty() ? getString(R.string.verif_no_report) : r.report);
+            ImageLoader.load(row.findViewById(R.id.ivPhoto), r.photo_url);
+            TextView hash = row.findViewById(R.id.tvHash);
+            hash.setVisibility(r.photo_sha256 == null ? View.GONE : View.VISIBLE);
+            if (r.photo_sha256 != null) hash.setText(getString(R.string.verif_hash, r.photo_sha256.substring(0, 16)));
+            layoutReports.addView(row);
+        }
+    }
+
+    private static String check(boolean ok, String yes, String no) {
+        return ok ? "✓ " + yes : "✗ " + no;
+    }
+
+    private String distance(String bucket) {
+        if (bucket == null || "inconnue".equals(bucket)) return getString(R.string.verif_distance_unknown);
+        if (bucket.startsWith(">")) return getString(R.string.verif_distance_far);
+        return getString(R.string.verif_distance_under, bucket.substring(1));
+    }
+
+    private void dispute() {
+        ApiClient.getApiService().disputeVerification(id).enqueue(new ApiCallback<Verification>(this) {
+            @Override
+            public void onSuccess(Verification body) {
+                Toast.makeText(VerificationActivity.this, R.string.verif_dispute_sent, Toast.LENGTH_LONG).show();
+                bind(body);
+            }
+        });
+    }
+
+    /** Capture verrouillée : la position sert au contrôle de présence, puis le jeton est demandé au serveur. */
     private void openCamera() {
-        File file = new File(getCacheDir(), "constat-" + System.currentTimeMillis() + ".jpg");
-        cameraUri = FileProvider.getUriForFile(this, getPackageName() + ".files", file);
-        takePhoto.launch(cameraUri);
+        if (!LocationReporter.hasPermission(this)) {
+            locationPermission.launch(new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION,
+                    android.Manifest.permission.ACCESS_COARSE_LOCATION});
+            return;
+        }
+        launchCamera();
+    }
+
+    private void launchCamera() {
+        ApiClient.getApiService().captureToken(id).enqueue(new ApiCallback<JsonObject>(this) {
+            @Override
+            public void onSuccess(JsonObject body) {
+                captureToken = body.get("token").getAsString();
+                File file = new File(getCacheDir(), "constat-" + System.currentTimeMillis() + ".jpg");
+                cameraUri = FileProvider.getUriForFile(VerificationActivity.this, getPackageName() + ".files", file);
+                takePhoto.launch(cameraUri);
+            }
+        });
     }
 
     private void setPhoto(Uri uri) {
@@ -281,20 +357,37 @@ public class VerificationActivity extends AppCompatActivity {
             }
         }
         String report = etReport.getText() != null ? etReport.getText().toString().trim() : "";
+        MultipartBody.Part photoPart = photo;
         btnSendReport.setEnabled(false);
-        ApiClient.getApiService().reportVerification(id, FileParts.text(outcome), FileParts.text(report), photo)
-                .enqueue(new ApiCallback<Verification>(this) {
-                    @Override
-                    public void onSuccess(Verification body) {
-                        Toast.makeText(VerificationActivity.this, R.string.verif_report_sent, Toast.LENGTH_LONG).show();
-                        bind(body);
-                    }
+        // Position au moment du constat : le serveur n'en garde que la tranche de distance au lieu.
+        LocationReporter.current(this, location -> {
+            Map<String, RequestBody> fields = new HashMap<>();
+            fields.put("outcome", FileParts.text(outcome));
+            fields.put("report", FileParts.text(report));
+            fields.put("device_time", FileParts.text(OffsetDateTime.now().toString()));
+            if (captureToken != null && photoPart != null) fields.put("capture_token", FileParts.text(captureToken));
+            if (location != null) {
+                fields.put("latitude", FileParts.text(String.valueOf(location.getLatitude())));
+                fields.put("longitude", FileParts.text(String.valueOf(location.getLongitude())));
+                fields.put("accuracy", FileParts.text(String.valueOf(location.getAccuracy())));
+                boolean mock = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ? location.isMock() : location.isFromMockProvider();
+                fields.put("mock_location", FileParts.text(String.valueOf(mock)));
+            }
+            ApiClient.getApiService().reportVerification(id, fields, photoPart).enqueue(new ApiCallback<Verification>(this) {
+                @Override
+                public void onSuccess(Verification body) {
+                    captureToken = null;
+                    Toast.makeText(VerificationActivity.this, "open".equals(body.status)
+                            ? R.string.verif_report_second : R.string.verif_report_sent, Toast.LENGTH_LONG).show();
+                    bind(body);
+                }
 
-                    @Override
-                    public void onFinally() {
-                        btnSendReport.setEnabled(true);
-                    }
-                });
+                @Override
+                public void onFinally() {
+                    btnSendReport.setEnabled(true);
+                }
+            });
+        });
     }
 
     @Override

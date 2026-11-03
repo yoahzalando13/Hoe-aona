@@ -2,8 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import {
   AdminUser, AnalysisOut, AnalysisPage, AnalysisStats, AnalysisUpdate, Article, ArticleEdit, AuthConfig, Comment, Health,
-  OfficialSource, OfficialSourceIn, PlatformStats, Post, PostPage, Preferences, PublicUser, Role, StatCatalog, StatSeries, StatSeriesPair, User, Workflow,
-} from './models';
+  OfficialSource, OfficialSourceIn, PlatformStats, Post, PostPage, Preferences, PublicUser, Role, StatCatalog, StatSeries, StatSeriesPair, User, Workflow, PlatformActivity } from './models';
 import { t } from './i18n';
 
 @Injectable({ providedIn: 'root' })
@@ -140,6 +139,7 @@ export class Api {
     return this.http.get<StatSeries[]>(`${this.base}/stats/compare`, { params: { indicator, countries: countries.join(',') } });
   }
   statsMadagascar() { return this.http.get<StatSeries[]>(`${this.base}/stats/madagascar`); }
+  statsActivity() { return this.http.get<PlatformActivity>(`${this.base}/stats/activity`); }
 
   // ---------- administration ----------
   adminStats() { return this.http.get<PlatformStats>(`${this.base}/admin/stats`); }

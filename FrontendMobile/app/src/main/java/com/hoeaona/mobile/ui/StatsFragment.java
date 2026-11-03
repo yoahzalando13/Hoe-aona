@@ -20,6 +20,7 @@ import androidx.fragment.app.Fragment;
 import com.hoeaona.mobile.R;
 import com.hoeaona.mobile.api.ApiCallback;
 import com.hoeaona.mobile.api.ApiClient;
+import com.hoeaona.mobile.model.PlatformActivity;
 import com.hoeaona.mobile.model.StatSeries;
 import com.hoeaona.mobile.util.Format;
 import com.hoeaona.mobile.util.Links;
@@ -47,6 +48,13 @@ public class StatsFragment extends Fragment {
             @Override
             public void onFinally() {
                 progress.setVisibility(View.GONE);
+            }
+        });
+        LinearLayout layoutActivity = view.findViewById(R.id.layoutActivity);
+        ApiClient.getApiService().statsActivity().enqueue(new ApiCallback<PlatformActivity>(getViewLifecycleOwner()) {
+            @Override
+            public void onSuccess(PlatformActivity body) {
+                new ActivitySection(requireContext(), layoutActivity, body);
             }
         });
         return view;

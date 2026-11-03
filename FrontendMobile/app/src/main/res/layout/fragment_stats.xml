@@ -29,5 +29,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"/>
+        <!-- Activité par région et contenus truqués (données fictives, signalées) -->
+        <LinearLayout
+            android:id="@+id/layoutActivity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"/>
     </LinearLayout>
 </ScrollView>

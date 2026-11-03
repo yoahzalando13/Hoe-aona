@@ -168,3 +168,14 @@ def test_coherence_limitee_a_l_enonce():
     assert not any(t.kind == "coherence" for t in reasoning.parse_tests(data, [], [], False, False))
     data = {"tests": {"coherence": {"outcome": "affaiblit", "summary": "Le texte annonce 3 morts puis 30 morts."}}}
     assert any(t.kind == "coherence" for t in reasoning.parse_tests(data, [], [], False, False))
+
+
+def test_activite_regionale_fictive():
+    from app.services.demo_activity import REGIONS, activity
+    a = activity()
+    assert a["demo"] is True and len(a["regions"]) == len(REGIONS) == 23
+    assert activity() == a  # déterministe
+    rates = [r["rate_per_100k"] for r in a["regions"]]
+    assert rates == sorted(rates, reverse=True)
+    assert all(0 <= r["deepfake_rate"] <= 100 and r["deepfakes"] <= r["media_analysed"] for r in a["regions"])
+    assert len(a["deepfake_monthly"]) == 12 and round(sum(k["share"] for k in a["deepfake_by_kind"])) == 100

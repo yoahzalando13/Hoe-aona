@@ -508,7 +508,8 @@ class OfficialSourceOut(OfficialSourceIn):
 VerificationStatus = Literal["open", "accepted", "completed", "cancelled", "expired"]
 VerificationOutcome = Literal["correct", "incorrect", "indetermine"]
 NotificationKind = Literal["verification_request", "verification_accepted", "verification_released",
-                           "verification_completed", "verification_cancelled"]
+                           "verification_second", "verification_completed", "verification_cancelled"]
+Consensus = Literal["single", "agreed", "divergent"]
 
 
 class LocationIn(BaseModel):
@@ -529,6 +530,24 @@ class VerificationIn(BaseModel):
     latitude: float = Field(..., ge=-90, le=90)
     longitude: float = Field(..., ge=-180, le=180)
     analysis_id: str | None = Field(None, max_length=32)
+
+
+class ReportOut(BaseModel):
+    """Constat certifié : contrôles de terrain et certificat signé. Jamais de coordonnées du vérificateur."""
+    id: str
+    verifier_id: str
+    verifier_name: str
+    outcome: VerificationOutcome
+    report: str = ""
+    photo_url: str | None = None
+    photo_sha256: str | None = None
+    capture_verified: bool
+    on_site: bool
+    distance_bucket: str
+    mock_location: bool
+    received_at: datetime
+    certified: bool
+    certificate_url: str
 
 
 class VerificationOut(BaseModel):
@@ -553,7 +572,10 @@ class VerificationOut(BaseModel):
     report: str = ""
     photo_url: str | None = None
     completed_at: datetime | None = None
-    role: Literal["requester", "verifier", "recipient"]
+    role: Literal["requester", "verifier", "reporter", "recipient"]  # reporter : constat déjà rendu
+    required_reports: int = 1
+    consensus: Consensus | None = None
+    reports: list[ReportOut] = []
 
 
 class NotificationOut(BaseModel):
@@ -566,3 +588,13 @@ class NotificationOut(BaseModel):
 
 class NotificationRead(BaseModel):
     ids: list[str] | None = Field(None, max_length=200)
+
+
+class AttestationOut(BaseModel):
+    """Certificat de constat et résultat de sa vérification."""
+    report_id: str
+    certificate: dict
+    signature: str
+    key_id: str
+    signature_valid: bool
+    photo_matches: bool | None = None
