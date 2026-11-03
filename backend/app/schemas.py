@@ -502,3 +502,67 @@ class OfficialSourceOut(OfficialSourceIn):
     id: str
     created_at: datetime
     updated_at: datetime
+
+
+# ---------- vérification physique (application mobile) ----------
+VerificationStatus = Literal["open", "accepted", "completed", "cancelled", "expired"]
+VerificationOutcome = Literal["correct", "incorrect", "indetermine"]
+NotificationKind = Literal["verification_request", "verification_accepted", "verification_released",
+                           "verification_completed", "verification_cancelled"]
+
+
+class LocationIn(BaseModel):
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+
+
+class LocationStatus(BaseModel):
+    """Le compte partage-t-il sa position ? Les coordonnées elles-mêmes ne sont jamais renvoyées."""
+    sharing: bool
+    updated_at: datetime | None = None
+
+
+class VerificationIn(BaseModel):
+    claim: str = Field(..., min_length=5, max_length=500)
+    details: str = Field("", max_length=2000)
+    place_label: str = Field(..., min_length=2, max_length=160)
+    latitude: float = Field(..., ge=-90, le=90)
+    longitude: float = Field(..., ge=-180, le=180)
+    analysis_id: str | None = Field(None, max_length=32)
+
+
+class VerificationOut(BaseModel):
+    id: str
+    created_at: datetime
+    expires_at: datetime
+    status: VerificationStatus
+    claim: str
+    details: str = ""
+    place_label: str
+    latitude: float
+    longitude: float
+    radius_m: int
+    analysis_id: str | None = None
+    requester_id: str
+    requester_name: str
+    requester_organization: str = ""
+    verifier_id: str | None = None
+    verifier_name: str | None = None
+    accepted_at: datetime | None = None
+    outcome: VerificationOutcome | None = None
+    report: str = ""
+    photo_url: str | None = None
+    completed_at: datetime | None = None
+    role: Literal["requester", "verifier", "recipient"]
+
+
+class NotificationOut(BaseModel):
+    id: str
+    kind: NotificationKind
+    created_at: datetime
+    read: bool
+    request: VerificationOut | None = None
+
+
+class NotificationRead(BaseModel):
+    ids: list[str] | None = Field(None, max_length=200)

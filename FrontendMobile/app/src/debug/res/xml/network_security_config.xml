@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Version de développement : HTTP en clair autorisé pour joindre un backend local (émulateur ou réseau Wi-Fi). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

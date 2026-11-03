@@ -15,93 +15,71 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Analyser une affirmation"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="@color/primary"
-            android:layout_marginBottom="16dp"/>
+            android:text="@string/analyze_title"
+            android:textAppearance="@style/TextAppearance.Hoe.Title"/>
 
-        <com.google.android.material.textfield.TextInputLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+            android:text="@string/analyze_intro"
+            android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
 
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Hoe.Field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/analyze_text_hint">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etAnalysisText"
                 android:layout_width="match_parent"
-                android:layout_height="150dp"
-                android:hint="Collez le texte, l'article ou l'affirmation à vérifier ici..."
+                android:layout_height="wrap_content"
                 android:gravity="top|start"
-                android:inputType="textMultiLine"/>
+                android:inputType="textMultiLine|textCapSentences"
+                android:minLines="6"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/Hoe.Field"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-
+            android:hint="@string/analyze_urls_hint"
+            app:helperText="@string/analyze_urls_helper">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etAnalysisUrl"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="URL source optionnelle (https://...)"
-                android:inputType="textUri"
-                android:maxLines="1"/>
+                android:inputType="textUri|textMultiLine"
+                android:minLines="2"/>
         </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddFiles"
+            style="@style/Hoe.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/analyze_add_files"
+            app:icon="@drawable/ic_attach"
+            app:iconTint="@color/primary"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/analyze_files_helper"
+            android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipFiles"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"/>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSubmitAnalysis"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:text="Lancer l'analyse"
-            android:textSize="16sp"
-            android:layout_marginBottom="24dp"
-            app:backgroundTint="@color/primary"/>
-
-        <LinearLayout
-            android:id="@+id/layoutResult"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone"
-            android:background="@color/white"
-            android:padding="16dp">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Résultat de l'analyse"
-                android:textSize="18sp"
-                android:textStyle="bold"
-                android:textColor="@color/black"
-                android:layout_marginBottom="8dp"/>
-
-            <TextView
-                android:id="@+id/tvResultTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/primary"
-                android:layout_marginBottom="4dp"/>
-
-            <TextView
-                android:id="@+id/tvResultVerdict"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:layout_marginBottom="8dp"/>
-
-            <TextView
-                android:id="@+id/tvResultSummary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="14sp"
-                android:textColor="@color/gray_text"/>
-        </LinearLayout>
-
+            android:layout_marginTop="24dp"
+            android:text="@string/analyze_submit"
+            android:textSize="16sp"/>
     </LinearLayout>
 </ScrollView>

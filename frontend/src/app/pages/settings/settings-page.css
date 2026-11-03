@@ -7,9 +7,9 @@
 .vl { font-size: 13px; color: var(--ink3); }
 .vl.strong { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
 
-.slider-opt input[type='range'] { flex-basis: 100%; margin: 2px 0 4px 44px; accent-color: var(--indigo); }
+.slider-opt input[type='range'] { flex-basis: 100%; margin: 2px 0 4px 44px; accent-color: var(--brand); }
 .foot { min-height: 44px; justify-content: space-between; }
-.link-btn { border: 0; background: none; color: var(--indigo); font-size: 12.5px; font-weight: 500; padding: 4px 0; }
+.link-btn { border: 0; background: none; color: var(--brand); font-size: 12.5px; font-weight: 500; padding: 4px 0; }
 
 .select { border: 1px solid var(--line); background: var(--soft); border-radius: 12px; padding: 7px 10px; font-size: 13px; }
 
@@ -21,7 +21,7 @@
   content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%;
   background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: left .2s;
 }
-.toggle:checked { background: var(--indigo); }
+.toggle:checked { background: var(--brand); }
 .toggle:checked::after { left: 21px; }
 
 .badge { text-decoration: none; }
@@ -33,7 +33,7 @@ code { font-size: 12px; background: var(--soft); padding: 1px 5px; border-radius
 .actions {
   position: sticky; bottom: calc(var(--nav-h) + 12px + var(--safe-b)); display: flex; justify-content: flex-end; gap: 10px;
   margin-top: 24px; padding: 10px; border-radius: 26px; background: var(--bg); border: 1px solid var(--line);
-  box-shadow: 0 10px 30px -18px rgba(22, 26, 51, .35); opacity: 0; pointer-events: none; transform: translateY(8px);
+  box-shadow: 0 10px 30px -18px rgba(31, 26, 23, .35); opacity: 0; pointer-events: none; transform: translateY(8px);
   transition: opacity .2s, transform .2s;
 }
 .actions.show { opacity: 1; pointer-events: auto; transform: none; }

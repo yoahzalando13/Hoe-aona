@@ -84,6 +84,38 @@ L'interface est disponible en **malagasy**, **français** et **anglais**. Le sé
 - `python scripts/check_i18n.py` signale toute clé sans traduction.
 - Les traductions malgaches sont à faire relire par un locuteur natif de la rédaction avant une mise en service.
 
+## Application mobile et vérification physique
+
+`FrontendMobile/` est l'application Android (Java, Material 3). Elle reprend les fonctions du web : fil média (publications avec image et analyse jointe, J'apprécie, commentaires, modération), analyse de texte, de liens et de fichiers avec suivi en direct, page Résultat complète, Mon espace (suivi éditorial, étiquettes, notes, export CSV), annuaire des sources officielles, statistiques, profil, paramètres, administration, interface en malagasy, français et anglais.
+
+Elle ajoute une fonction **réservée au mobile** : la **vérification physique**. Certaines informations récentes ne se vérifient que sur place.
+
+1. Un membre décrit l'information et désigne le lieu précis sur une carte OpenStreetMap. Il peut aussi partir d'une affirmation de la page Résultat.
+2. PostGIS sélectionne les comptes dont la dernière position (moins de 2 heures) se trouve à moins de **2 km** du lieu (`ST_DWithin` sur des `geography`). Ces comptes reçoivent une notification.
+3. Le premier qui accepte devient vérificateur. L'attribution est atomique : le demandeur est notifié, et l'annonce disparaît chez les autres (liste et volet de notifications).
+4. Le vérificateur se rend sur place et indique si l'information est **correcte**, **incorrecte** ou **impossible à établir**, avec un commentaire et une photo. Le demandeur est notifié.
+
+Le vérificateur peut renoncer : la demande est alors proposée de nouveau. Le demandeur peut annuler. Une demande sans preneur expire au bout de 24 heures.
+
+**Confidentialité des positions**
+
+- Le partage est désactivé par défaut. Il demande un consentement explicite.
+- Aucune route ne renvoie de coordonnées d'un compte, de distance ni de nombre de destinataires, pas même aux administrateurs. Seule la base calcule qui est dans le rayon.
+- La position est effacée quand l'option est désactivée, à la déconnexion et à la désactivation du compte. Une position de plus de 2 heures n'est plus prise en compte et est purgée au démarrage.
+- Le nom du vérificateur n'est montré au demandeur qu'après acceptation. L'application le signale avant d'accepter.
+- Les routes `/api/verifications/*` exigent l'en-tête `X-Hoe-Client: android`, envoyé par l'application. C'est une restriction d'usage, pas une mesure de sécurité.
+
+| Variable | Défaut | Rôle |
+| --- | --- | --- |
+| `POSTGIS_URL` | vide | `postgresql://…` avec l'extension PostGIS ; vide = fonction désactivée |
+| `VERIFICATION_RADIUS_M` | `2000` | Rayon de notification |
+| `VERIFICATION_HOURS` | `24` | Durée de vie d'une demande sans preneur |
+| `LOCATION_MAX_AGE_MINUTES` | `120` | Âge maximal d'une position prise en compte |
+
+`docker compose up` démarre aussi un conteneur `postgis/postgis`. Les notifications arrivent par interrogation : toutes les 30 s quand l'application est ouverte, toutes les 15 min sinon (WorkManager). Application fermée, la position n'est mise à jour que si l'utilisateur accorde la localisation en arrière-plan.
+
+**Construire l'application** : ouvrez `FrontendMobile/` dans Android Studio. Par défaut, l'application vise `http://10.0.2.2:8000/` (la machine hôte vue depuis l'émulateur). Pour un téléphone, changez l'adresse dans « Serveur » sur l'écran de connexion, ou construisez avec `-PhoeApiUrl=http://IP:8000/`. Le HTTP en clair n'est autorisé qu'en debug.
+
 ## Tests de raisonnement
 
 En plus des preuves, chaque affirmation passe par des tests de raisonnement affichés dans la page Résultat :
@@ -148,6 +180,10 @@ La transcription audio nécessite `GROQ_API_KEY`. L'état de chaque service est 
 | GET       | `/api/users/{id}`                          | Profil public                                                                |
 | …         | `/api/admin/stats`, `users`, `posts`       | Administration (rôle admin)                                                  |
 | GET       | `/api/health`                              | Mode MCP, outils, services configurés                                        |
+| PUT/DEL   | `/api/verifications/location`              | Mobile : partager ou effacer sa position (jamais relue par l'API)            |
+| POST/GET  | `/api/verifications`, `/nearby`, `/mine`, `/assigned` | Mobile : demandes de vérification physique                        |
+| POST      | `/api/verifications/{id}/accept` · `decline` · `release` · `report` · `cancel` | Mobile : cycle de vie d'une demande          |
+| GET/POST  | `/api/verifications/notifications` · `/read` | Mobile : notifications (`undelivered=true` pour le téléphone)            |
 
 ## Le serveur MCP
 
@@ -174,7 +210,7 @@ cd backend
 pytest                              # ou : python tests/run_without_pytest.py
 ```
 
-Les tests couvrent les règles pures : mots-clés et extraits, fiabilité des domaines, signatures IA (IPTC, PNG Stable Diffusion, métadonnées PDF, formules d'assistant) et calcul des scores. `tests/test_accounts.py` vérifie de bout en bout les comptes, le cloisonnement des analyses, le fil, la modération et l'administration.
+Les tests couvrent les règles pures : mots-clés et extraits, fiabilité des domaines, signatures IA (IPTC, PNG Stable Diffusion, métadonnées PDF, formules d'assistant) et calcul des scores. `tests/test_accounts.py` vérifie de bout en bout les comptes, le cloisonnement des analyses, le fil, la modération et l'administration. `tests/test_verifications.py` vérifie la vérification physique sur une vraie base PostGIS (`TEST_POSTGIS_URL=postgresql://… pytest`) : rayon de 2 km, attribution unique, renoncement, annulation, effacement des positions.
 
 ## À vérifier avant la mise en production
 

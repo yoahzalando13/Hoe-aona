@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..auth import public_user, require_admin
 from ..db import get_db
+from ..geo import get_geo
 from ..schemas import AdminUser, AdminUserUpdate, AnalysisStats, PlatformStats, PostOut, PostPage
 from .social import to_post
 
@@ -46,6 +47,8 @@ async def update_user(user_id: str, payload: AdminUserUpdate, admin: dict[str, A
     db.update_user(user_id, **fields)
     if payload.active is False:
         db.delete_user_sessions(user_id)
+        if geo := get_geo():
+            geo.forget_user(user_id)
     updated = next(u for u in db.list_users() if u["id"] == user_id)
     return public_user(updated)
 

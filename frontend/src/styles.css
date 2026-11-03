@@ -1,30 +1,32 @@
-/* Jetons repris de la maquette mobile */
+/* Jetons dérivés du logo : cramoisi #B10D23 et bordeaux #86101F sur un fond papier chaud. */
 :root {
-  --ink: #161a33;
-  --ink2: #5b6080;
-  --ink3: #8a90ad;
-  --line: #e7e9f3;
+  --brand: #b10d23;
+  --brand-deep: #86101f;
+  --brand-soft: #f7e3e5;
+  --brand-tint: #fcf3f3;
+
+  --ink: #1f1a17;
+  --ink2: #5a524d;
+  --ink3: #8a8079;
+  --line: #e6ded6;
+  --line-strong: #cfc4b9;
   --bg: #ffffff;
-  --soft: #f3f4fa;
-  --page: #f7f8fc;
-  --indigo: #4b4ded;
-  --indigo-soft: #ecebfe;
-  --violet: #8b5cf6;
-  --teal: #0ea5a4;
-  --good: #16a36a;
-  --good-soft: #e3f6ec;
-  --mid: #c9800a;
-  --mid-soft: #fff3df;
-  --bad: #e5484d;
-  --bad-soft: #fde8e9;
-  --blue-soft: #e6f0ff; --blue: #2f6bf0;
-  --orange-soft: #fdede6; --orange: #e0612e;
-  --purple-soft: #efe9fe; --purple: #7c4deb;
-  --green-soft: #e2f6f2; --green: #0e9483;
-  --radius-l: 24px;
-  --radius-m: 18px;
-  --radius-s: 12px;
-  --gradient: linear-gradient(100deg, var(--indigo) 0%, var(--violet) 55%, var(--teal) 100%);
+  --soft: #f3eee8;
+  --page: #faf7f2;
+
+  /* Verdicts : vert forêt, ocre, cramoisi (le faux prend la couleur de la marque, comme un tampon). */
+  --good: #2e6b3c;
+  --good-soft: #e3eee4;
+  --mid: #a5680a;
+  --mid-soft: #f7ecd9;
+  --bad: #a3141f;
+  --bad-soft: #f8e4e5;
+
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --sans: "IBM Plex Sans", "Segoe UI", Roboto, system-ui, sans-serif;
+  --radius-l: 14px;
+  --radius-m: 10px;
+  --radius-s: 8px;
   --nav-h: 72px;
   --safe-b: env(safe-area-inset-bottom, 0px);
   color-scheme: light;
@@ -33,19 +35,20 @@
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body {
-  font-family: Poppins, "Segoe UI", Roboto, system-ui, sans-serif;
+  font-family: var(--sans);
   font-size: 15px;
   line-height: 1.5;
   color: var(--ink);
-  background: #ffffff;
+  background: var(--page);
   -webkit-font-smoothing: antialiased;
 }
 h1, h2, h3, h4, p { margin: 0; }
-h1, h2, h3, h4 { font-weight: 500; }
-a { color: var(--indigo); }
+h1, h2, h3, h4 { font-weight: 600; }
+h1, .page-title { font-family: var(--serif); font-weight: 600; }
+a { color: var(--brand); text-underline-offset: 2px; }
 button, input, textarea, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
-:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; border-radius: 6px; }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 6px; }
 img { max-width: 100%; }
 
 /* Mise en page des pages */
@@ -57,8 +60,12 @@ img { max-width: 100%; }
 
 .appbar { display: flex; align-items: center; gap: 8px; min-height: 48px; margin-bottom: 8px; }
 .appbar h1 { font-size: 18px; flex: 1; }
-.page-title { font-size: 26px; letter-spacing: -0.3px; }
-.section-label { font-size: 13px; font-weight: 500; color: var(--ink3); margin: 20px 2px 8px; }
+.page-title { font-size: 30px; line-height: 1.15; letter-spacing: -0.2px; }
+/* Intertitre de rubrique : petites capitales espacées sous un filet, comme dans un journal. */
+.section-label {
+  font-size: 11.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--ink2);
+  margin: 24px 2px 10px; padding-top: 8px; border-top: 1px solid var(--ink);
+}
 
 /* Boutons */
 .icon-btn {
@@ -68,34 +75,45 @@ img { max-width: 100%; }
 .icon-btn:hover { background: var(--soft); }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  height: 46px; padding: 0 20px; border-radius: 23px; border: 0; font-weight: 500; font-size: 14px;
+  height: 44px; padding: 0 18px; border-radius: 6px; border: 0; font-weight: 500; font-size: 14px;
   background: var(--soft); color: var(--ink); text-decoration: none;
 }
-.btn-primary { background: var(--ink); color: var(--bg); }
-.btn-outline { background: transparent; border: 1px solid var(--line); }
+.btn-primary { background: var(--brand); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--brand-deep); }
+.btn-outline { background: var(--bg); border: 1px solid var(--line-strong); }
 .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 .btn-sm { height: 36px; padding: 0 14px; font-size: 13px; }
 
 /* Cartes et badges */
 .card { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 14px 16px; }
 .chip-icon { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; flex-shrink: 0; }
-.tone-blue { background: var(--blue-soft); color: var(--blue); }
-.tone-orange { background: var(--orange-soft); color: var(--orange); }
-.tone-purple { background: var(--purple-soft); color: var(--purple); }
-.tone-green { background: var(--green-soft); color: var(--green); }
+/* Teintes limitées à la palette du logo et des verdicts (anciens noms conservés). */
+.tone-blue { background: var(--soft); color: var(--ink); }
+.tone-orange { background: var(--mid-soft); color: var(--mid); }
+.tone-purple { background: var(--brand-soft); color: var(--brand-deep); }
+.tone-green { background: var(--good-soft); color: var(--good); }
 .tone-amber { background: var(--mid-soft); color: var(--mid); }
 .tone-grey { background: var(--soft); color: var(--ink2); }
 .tone-red { background: var(--bad-soft); color: var(--bad); }
+/* Pictogrammes : trait fin et encre, sans pastille colorée (les teintes restent pour les avatars). */
+.chip-icon[class*="tone-"] { background: transparent; color: var(--ink2); border: 1px solid var(--line); }
 
-.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500;
-  padding: 4px 11px; border-radius: 14px; white-space: nowrap; }
+/* Verdict en « tampon » : capitales, filet de la couleur du verdict. */
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase; padding: 3px 9px; border-radius: 4px;
+  border: 1px solid currentColor; white-space: nowrap; }
 .badge.good { background: var(--good-soft); color: var(--good); }
 .badge.mid { background: var(--mid-soft); color: var(--mid); }
 .badge.bad { background: var(--bad-soft); color: var(--bad); }
 .badge.neutral { background: var(--soft); color: var(--ink2); }
 
-.bar { height: 6px; border-radius: 3px; background: var(--soft); overflow: hidden; }
-.bar > i { display: block; height: 100%; border-radius: 3px; transition: width .6s ease; }
+/* Jauge graduée en dixièmes : se lit comme une règle plutôt que comme une barre de progression. */
+.bar { position: relative; height: 8px; border-radius: 1px; background: var(--soft); overflow: hidden; }
+.bar > i { display: block; height: 100%; transition: width .6s ease; }
+.bar::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(90deg, transparent 0 calc(10% - 1px), var(--bg) calc(10% - 1px) 10%);
+}
 
 .muted { color: var(--ink3); font-size: 12.5px; }
 .error-box { background: var(--bad-soft); color: var(--bad); border-radius: var(--radius-s); padding: 12px 14px; font-size: 14px; }
@@ -111,22 +129,33 @@ img { max-width: 100%; }
   width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 14px; padding: 11px 14px;
   font-size: 14px; outline: none; transition: border-color .15s;
 }
-.input:focus { border-color: var(--indigo); }
+.input:focus { border-color: var(--brand); }
 textarea.input { resize: vertical; min-height: 88px; line-height: 1.45; }
 select.input { padding: 9px 12px; }
-.btn-danger { background: var(--bad); color: #fff; }
+.btn-danger { background: var(--bg); color: var(--bad); border: 1px solid var(--bad); }
 .avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; font-size: 14px; font-weight: 500; flex-shrink: 0; text-decoration: none; }
 .toast {
   position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--nav-h) + 16px + var(--safe-b));
   background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 20px; font-size: 13.5px; z-index: 30;
 }
 @media (min-width: 900px) { .toast { bottom: 24px; } }
-.tabs { display: flex; gap: 4px; padding: 4px; border-radius: 22px; background: var(--soft); width: fit-content; max-width: 100%; overflow-x: auto; }
-.tabs button { border: 0; background: transparent; padding: 7px 14px; border-radius: 18px; font-size: 13px; color: var(--ink2); white-space: nowrap; }
-.tabs button.on { background: var(--bg); color: var(--ink); font-weight: 500; box-shadow: 0 1px 3px rgba(22,26,51,.12); }
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
-.stat { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-m); padding: 12px 14px; }
-.stat b { display: block; font-size: 24px; font-weight: 500; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
-.stat span { font-size: 12px; color: var(--ink3); }
+.tabs { display: flex; gap: 2px; padding: 0; border-bottom: 1px solid var(--line); width: fit-content; max-width: 100%; overflow-x: auto; }
+.tabs button { border: 0; border-bottom: 2px solid transparent; background: transparent; padding: 8px 12px; margin-bottom: -1px; font-size: 13px; color: var(--ink2); white-space: nowrap; }
+.tabs button.on { color: var(--ink); font-weight: 600; border-bottom-color: var(--brand); }
+/* Bandeau de chiffres : filet épais au-dessus, chiffres en serif séparés par des filets fins, sans cartes. */
+.stat-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line);
+}
+.stat-grid > .stat { padding: 12px 16px 14px 0; border-bottom: 1px solid var(--line); margin-bottom: -1px; }
+.stat-grid > .stat + .stat { padding-left: 16px; border-left: 1px solid var(--line); }
+.stat-grid > .stat b {
+  display: block; font-family: var(--serif); font-size: 34px; font-weight: 500; line-height: 1.05;
+  font-variant-numeric: lining-nums tabular-nums; letter-spacing: -0.5px;
+}
+.stat-grid > .stat span { display: block; margin-top: 4px; font-size: 12px; line-height: 1.35; color: var(--ink2); }
+
+/* Chiffre de presse réutilisable : serif, chiffres alignés. */
+.fig { font-family: var(--serif); font-variant-numeric: lining-nums tabular-nums; font-weight: 500; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

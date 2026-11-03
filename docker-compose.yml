@@ -5,8 +5,28 @@ services:
       - "8000:8000"
     env_file:
       - backend/.env
+    environment:
+      # Vérification physique (application mobile) : positions et rayons calculés par PostGIS.
+      POSTGIS_URL: postgresql://hoe:hoe@postgis:5432/hoe_aona
+    depends_on:
+      postgis:
+        condition: service_healthy
     volumes:
       - hoe-aona-data:/srv/backend/data
     restart: unless-stopped
+  postgis:
+    image: postgis/postgis:17-3.5
+    environment:
+      POSTGRES_USER: hoe
+      POSTGRES_PASSWORD: hoe
+      POSTGRES_DB: hoe_aona
+    volumes:
+      - hoe-aona-geo:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hoe -d hoe_aona"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
 volumes:
   hoe-aona-data:
+  hoe-aona-geo:

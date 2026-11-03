@@ -12,34 +12,36 @@
   @if (dashError()) {
     <p class="error-box" role="alert">{{ dashError() }}</p>
   } @else if (!dashboard()) {
-    <div class="tiles" aria-busy="true">
-      @for (i of [1, 2, 3, 4, 5, 6]; track i) { <div class="tile skeleton-tile"></div> }
-    </div>
+    <ol class="almanac" aria-busy="true">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) { <li class="skeleton-row"></li> }
+    </ol>
   } @else {
-    <div class="tiles">
+    <ol class="almanac">
       @for (d of dashboard(); track d.indicator_code) {
-      <button type="button" class="tile" [class.sel]="indicator() === d.indicator_code && country() === 'MDG'"
-              (click)="pick(d.indicator_code)" [disabled]="!d.ok">
-        <span class="t-label">{{ d.indicator_name || d.indicator_code }}</span>
-        @if (d.ok) {
-          <span class="t-value">{{ fmt(d.latest_value, d.unit) }} <small>{{ shortUnit(d.unit) }}</small></span>
-          <span class="t-meta">
-            <span [class.old]="age(d.latest_year) > 2">{{ d.latest_year }}</span>
-            @if (d.imf?.ok && d.imf!.latest_year! > d.latest_year!) {
-              · {{ 'FMI {annee} : {valeur}' | t: { annee: d.imf!.latest_year, valeur: fmt(d.imf!.latest_value, d.unit) } }}
-            }
-          </span>
-          @if (spark(d.series); as pts) {
-          <svg class="spark" viewBox="0 0 100 28" aria-hidden="true" preserveAspectRatio="none">
-            <polyline [attr.points]="pts" />
-          </svg>
+      <li>
+        <button type="button" class="a-row" [class.sel]="indicator() === d.indicator_code && country() === 'MDG'"
+                (click)="pick(d.indicator_code)" [disabled]="!d.ok">
+          <span class="a-label">{{ d.indicator_name || d.indicator_code }}</span>
+          @if (d.ok) {
+            @if (spark(d.series); as pts) {
+            <svg class="spark" viewBox="0 0 100 28" aria-hidden="true" preserveAspectRatio="none">
+              <polyline [attr.points]="pts" />
+            </svg>
+            } @else { <span></span> }
+            <span class="a-fig"><b class="fig">{{ fmt(d.latest_value, d.unit) }}</b><small>{{ shortUnit(d.unit) }}</small></span>
+            <span class="a-meta">
+              <span [class.old]="age(d.latest_year) > 2">{{ d.latest_year }}</span>
+              @if (d.imf?.ok && d.imf!.latest_year! > d.latest_year!) {
+                · {{ 'FMI {annee} : {valeur}' | t: { annee: d.imf!.latest_year, valeur: fmt(d.imf!.latest_value, d.unit) } }}
+              }
+            </span>
+          } @else {
+            <span></span><span class="a-meta">{{ 'Donnée indisponible' | t }}</span>
           }
-        } @else {
-          <span class="t-meta">{{ 'Donnée indisponible' | t }}</span>
-        }
-      </button>
+        </button>
+      </li>
       }
-    </div>
+    </ol>
   }
 
   <!-- Explorateur -->

@@ -1,12 +1,12 @@
 package com.hoeaona.mobile.ui;
 
-import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.EditText;
-import android.widget.Toast;
+import android.view.inputmethod.EditorInfo;
+import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -14,105 +14,87 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.textfield.TextInputEditText;
 import com.hoeaona.mobile.R;
+import com.hoeaona.mobile.api.ApiCallback;
 import com.hoeaona.mobile.api.ApiClient;
 import com.hoeaona.mobile.model.Post;
 import com.hoeaona.mobile.model.PostPage;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-
-import java.util.ArrayList;
 
 public class FeedFragment extends Fragment {
+    private static final int PAGE = 20;
+
     private SwipeRefreshLayout swipeRefresh;
-    private RecyclerView recyclerView;
-    private FloatingActionButton fabCreatePost;
+    private TextInputEditText etSearch;
+    private TextView tvEmpty;
     private PostAdapter adapter;
+    private int loaded, total;
+    private boolean loading;
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_feed, container, false);
         swipeRefresh = view.findViewById(R.id.swipeRefresh);
-        recyclerView = view.findViewById(R.id.recyclerView);
-        fabCreatePost = view.findViewById(R.id.fabCreatePost);
+        RecyclerView recyclerView = view.findViewById(R.id.recyclerView);
+        FloatingActionButton fabCreatePost = view.findViewById(R.id.fabCreatePost);
+        etSearch = view.findViewById(R.id.etSearch);
+        tvEmpty = view.findViewById(R.id.tvEmpty);
 
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new PostAdapter(new ArrayList<>(), post -> {
-            if (post.isLiked()) {
-                ApiClient.getApiService().unlikePost(post.getId()).enqueue(new Callback<Post>() {
-                    @Override
-                    public void onResponse(Call<Post> call, Response<Post> response) {
-                        loadPosts();
-                    }
-                    @Override
-                    public void onFailure(Call<Post> call, Throwable t) {}
-                });
-            } else {
-                ApiClient.getApiService().likePost(post.getId()).enqueue(new Callback<Post>() {
-                    @Override
-                    public void onResponse(Call<Post> call, Response<Post> response) {
-                        loadPosts();
-                    }
-                    @Override
-                    public void onFailure(Call<Post> call, Throwable t) {}
-                });
+        LinearLayoutManager layout = new LinearLayoutManager(getContext());
+        recyclerView.setLayoutManager(layout);
+        adapter = new PostAdapter(new PostActions(requireContext(), getViewLifecycleOwner(), new PostActions.Listener() {
+            @Override public void onPostChanged(Post post) { adapter.replace(post); }
+            @Override public void onPostDeleted(Post post) { adapter.remove(post); }
+        }));
+        recyclerView.setAdapter(adapter);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView rv, int dx, int dy) {
+                if (dy > 0 && !loading && loaded < total && layout.findLastVisibleItemPosition() >= loaded - 4) {
+                    loadPosts(false);
+                }
             }
         });
-        recyclerView.setAdapter(adapter);
 
-        swipeRefresh.setOnRefreshListener(this::loadPosts);
-
-        fabCreatePost.setOnClickListener(v -> showCreatePostDialog());
-
-        loadPosts();
+        swipeRefresh.setOnRefreshListener(() -> loadPosts(true));
+        etSearch.setOnEditorActionListener((v, actionId, e) -> {
+            if (actionId == EditorInfo.IME_ACTION_SEARCH) {
+                loadPosts(true);
+                return true;
+            }
+            return false;
+        });
+        fabCreatePost.setOnClickListener(v -> startActivity(new Intent(requireContext(), CreatePostActivity.class)));
         return view;
     }
 
-    private void loadPosts() {
-        swipeRefresh.setRefreshing(true);
-        ApiClient.getApiService().listPosts(null, null, 20, 0).enqueue(new Callback<PostPage>() {
-            @Override
-            public void onResponse(Call<PostPage> call, Response<PostPage> response) {
-                swipeRefresh.setRefreshing(false);
-                if (response.isSuccessful() && response.body() != null) {
-                    adapter.setPosts(response.body().getItems());
-                }
-            }
-
-            @Override
-            public void onFailure(Call<PostPage> call, Throwable t) {
-                swipeRefresh.setRefreshing(false);
-                Toast.makeText(getContext(), "Erreur de chargement du feed", Toast.LENGTH_SHORT).show();
-            }
-        });
+    @Override
+    public void onResume() {
+        super.onResume();
+        loadPosts(true);
     }
 
-    private void showCreatePostDialog() {
-        EditText input = new EditText(getContext());
-        input.setHint("Partagez une information ou une analyse...");
-        new AlertDialog.Builder(getContext())
-                .setTitle("Créer une publication")
-                .setView(input)
-                .setPositiveButton("Publier", (dialog, which) -> {
-                    String text = input.getText().toString().trim();
-                    if (!text.isEmpty()) {
-                        okhttp3.RequestBody body = okhttp3.RequestBody.create(okhttp3.MediaType.parse("text/plain"), text);
-                        ApiClient.getApiService().createPost(body, null, null).enqueue(new Callback<Post>() {
-                            @Override
-                            public void onResponse(Call<Post> call, Response<Post> response) {
-                                if (response.isSuccessful()) {
-                                    Toast.makeText(getContext(), "Publication créée", Toast.LENGTH_SHORT).show();
-                                    loadPosts();
-                                }
-                            }
-                            @Override
-                            public void onFailure(Call<Post> call, Throwable t) {}
-                        });
-                    }
-                })
-                .setNegativeButton("Annuler", null)
-                .show();
+    private void loadPosts(boolean reset) {
+        loading = true;
+        swipeRefresh.setRefreshing(true);
+        String q = etSearch.getText() != null ? etSearch.getText().toString().trim() : "";
+        int offset = reset ? 0 : loaded;
+        ApiClient.getApiService().listPosts(q, null, PAGE, offset).enqueue(new ApiCallback<PostPage>(getViewLifecycleOwner()) {
+            @Override
+            public void onSuccess(PostPage body) {
+                total = body.total;
+                if (reset) adapter.setPosts(body.items);
+                else adapter.addPosts(body.items);
+                loaded = offset + body.items.size();
+                tvEmpty.setVisibility(loaded == 0 ? View.VISIBLE : View.GONE);
+            }
+
+            @Override
+            public void onFinally() {
+                loading = false;
+                swipeRefresh.setRefreshing(false);
+            }
+        });
     }
 }

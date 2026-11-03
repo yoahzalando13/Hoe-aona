@@ -44,7 +44,7 @@
             @for (w of workflows; track w.key) {
               <div class="bar-row">
                 <span>{{ w.label }}</span>
-                <div class="bar"><i [style.width.%]="a.total ? (wf(w.key) / a.total) * 100 : 0" style="background: var(--indigo)"></i></div>
+                <div class="bar"><i [style.width.%]="a.total ? (wf(w.key) / a.total) * 100 : 0" style="background: var(--brand)"></i></div>
                 <b>{{ wf(w.key) }}</b>
               </div>
             }

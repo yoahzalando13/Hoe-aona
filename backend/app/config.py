@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     sightengine_api_secret: str | None = None
     ocr_space_api_key: str | None = None
 
+    # Vérification physique (application mobile) : PostgreSQL + PostGIS
+    postgis_url: str | None = None  # ex. postgresql://hoe:hoe@localhost:5432/hoe_aona
+    verification_radius_m: int = 2000
+    verification_hours: int = 24  # durée de vie d'une demande sans preneur
+    location_max_age_minutes: int = 120  # une position plus ancienne n'est plus prise en compte
+    max_open_verifications: int = 5  # demandes ouvertes simultanées par compte
+
     # MCP
     mcp_mode: str = "mcp"  # "mcp" ou "direct"
     mcp_config_file: Path = BACKEND_DIR / "mcp_servers.json"
@@ -59,4 +66,5 @@ def get_settings() -> Settings:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
     (settings.data_dir / "uploads").mkdir(parents=True, exist_ok=True)
     (settings.data_dir / "posts").mkdir(parents=True, exist_ok=True)
+    (settings.data_dir / "verifications").mkdir(parents=True, exist_ok=True)
     return settings

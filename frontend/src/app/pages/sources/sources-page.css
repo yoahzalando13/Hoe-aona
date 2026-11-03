@@ -9,14 +9,14 @@
 .kpis .warn b { color: var(--mid); }
 
 .search { display: flex; align-items: center; gap: 10px; height: 46px; margin: 16px 0 10px; padding: 0 16px; border-radius: 23px; border: 1px solid var(--line); color: var(--ink3); }
-.search:focus-within { border-color: var(--indigo); }
+.search:focus-within { border-color: var(--brand); }
 .search input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font-size: 14px; color: var(--ink); }
 
 .cats { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: thin; }
 .chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: #ffffff; border-radius: 999px; padding: 6px 12px; font-size: 12.5px; color: var(--ink2); }
 .chip small { color: var(--ink3); font-size: 11px; }
-.chip.on { border-color: var(--indigo); background: var(--indigo-soft); color: var(--indigo); font-weight: 500; }
-.chip.on small { color: var(--indigo); }
+.chip.on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand); font-weight: 500; }
+.chip.on small { color: var(--brand); }
 
 .section-label { display: flex; align-items: center; gap: 6px; margin-top: 22px; }
 .grid { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; grid-template-columns: 1fr; }
@@ -25,11 +25,11 @@
 .skel { height: 190px; background: var(--soft); border: 0; animation: pulse 1.2s ease-in-out infinite; }
 
 .src { display: flex; flex-direction: column; gap: 10px; padding: 14px; min-width: 0; transition: border-color .15s; }
-.src:hover { border-color: var(--indigo-soft); }
+.src:hover { border-color: var(--brand-soft); }
 .src.off { opacity: .6; }
 .src.editing { grid-column: 1 / -1; padding: 0; border: 0; background: transparent; }
 .src-top { display: flex; align-items: flex-start; gap: 10px; }
-.mono { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; background: var(--indigo-soft); color: var(--indigo); font-size: 12px; font-weight: 600; letter-spacing: .3px; }
+.mono { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand); font-size: 12px; font-weight: 600; letter-spacing: .3px; }
 .src-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .src-t strong { font-size: 15px; font-weight: 600; line-height: 1.3; }
 .full { font-size: 12.5px; color: var(--ink2); line-height: 1.35; }
@@ -39,7 +39,7 @@
 
 .quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .q { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: #ffffff; font-size: 12.5px; color: var(--ink); text-decoration: none; }
-.q:hover { border-color: var(--indigo); color: var(--indigo); }
+.q:hover { border-color: var(--brand); color: var(--brand); }
 
 .details { margin: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; }
 .details div { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 6px; align-items: start; }
@@ -62,10 +62,10 @@
 @media (min-width: 640px) { .portals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1100px) { .portals { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .portal { display: flex; align-items: center; gap: 12px; padding: 12px 14px; color: var(--ink); text-decoration: none; height: 100%; transition: border-color .15s; }
-.portal:hover { border-color: var(--indigo); }
+.portal:hover { border-color: var(--brand); }
 .portal > app-icon:last-child { color: var(--ink3); flex-shrink: 0; }
 .p-ic { width: 38px; height: 38px; border-radius: 12px; flex-shrink: 0; display: grid; place-items: center; background: var(--soft); color: var(--ink2); }
-.portal.internal .p-ic { background: var(--indigo-soft); color: var(--indigo); }
+.portal.internal .p-ic { background: var(--brand-soft); color: var(--brand); }
 .p-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .p-t strong { font-size: 14px; font-weight: 500; }
 .p-t small { font-size: 12px; color: var(--ink3); }

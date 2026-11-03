@@ -1,41 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    style="@style/Hoe.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
-
+    android:layout_marginBottom="8dp">
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
-
+        android:padding="14dp">
         <TextView
-            android:id="@+id/tvSourceName"
+            android:id="@+id/tvName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:textSize="16sp"
+            android:textAppearance="@style/TextAppearance.Hoe.Subtitle"
+            android:textSize="15sp"/>
+        <TextView
+            android:id="@+id/tvCategory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:textColor="@color/primary"
-            android:layout_marginBottom="4dp"/>
-
+            android:textSize="13sp"/>
         <TextView
-            android:id="@+id/tvSourceCategory"
+            android:id="@+id/tvNotes"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="14sp"
-            android:textColor="@color/gray_text"
-            android:layout_marginBottom="8dp"/>
-
+            android:layout_marginTop="4dp"
+            android:textAppearance="@style/TextAppearance.Hoe.Body"
+            android:textSize="13sp"/>
         <TextView
-            android:id="@+id/tvSourceWebsite"
+            android:id="@+id/tvAddress"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="13sp"
-            android:textColor="#0066CC"/>
-
+            android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCall"
+                style="@style/Hoe.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/contact_call"
+                app:icon="@drawable/ic_call"
+                app:iconTint="@color/primary"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEmail"
+                style="@style/Hoe.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/contact_email"
+                app:icon="@drawable/ic_email"
+                app:iconTint="@color/primary"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnWebsite"
+                style="@style/Hoe.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/contact_website"
+                app:icon="@drawable/ic_web"
+                app:iconTint="@color/primary"/>
+        </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

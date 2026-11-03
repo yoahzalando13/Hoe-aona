@@ -3,32 +3,223 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
     android:background="@color/gray_bg">
-
-    <LinearLayout
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
+    <com.google.android.material.card.MaterialCardView
+        style="@style/Hoe.Card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Réglages et Préférences"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="@color/primary"
-            android:layout_marginBottom="16dp"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLogout"
+        android:layout_marginBottom="12dp">
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="Se déconnecter"
-            android:textSize="16sp"
-            android:layout_marginTop="24dp"
-            app:backgroundTint="#D32F2F"/>
-
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="@string/settings_language"
+                android:textAppearance="@style/TextAppearance.Hoe.Subtitle"/>
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/langGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLangMg" style="@style/Hoe.OutlinedButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Malagasy"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLangFr" style="@style/Hoe.OutlinedButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Français"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnLangEn" style="@style/Hoe.OutlinedButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="English"/>
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+    <com.google.android.material.card.MaterialCardView
+        style="@style/Hoe.Card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="@string/settings_analysis"
+                android:textAppearance="@style/TextAppearance.Hoe.Subtitle"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_weights_helper"
+                android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/settings_weight_source"
+                android:textAppearance="@style/TextAppearance.Hoe.Body"/>
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slWeightSource"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0"
+                android:valueTo="100"
+                android:stepSize="5"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/settings_weight_veracity"
+                android:textAppearance="@style/TextAppearance.Hoe.Body"/>
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slWeightVeracity"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0"
+                android:valueTo="100"
+                android:stepSize="5"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/settings_weight_ai"
+                android:textAppearance="@style/TextAppearance.Hoe.Body"/>
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slWeightAi"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0"
+                android:valueTo="100"
+                android:stepSize="5"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/settings_ai_threshold"
+                android:textAppearance="@style/TextAppearance.Hoe.Body"/>
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slAiThreshold"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="50"
+                android:valueTo="95"
+                android:stepSize="5"/>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/settings_min_reliability"
+                android:textAppearance="@style/TextAppearance.Hoe.Body"/>
+            <com.google.android.material.slider.Slider
+                android:id="@+id/slMinReliability"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:valueFrom="0"
+                android:valueTo="90"
+                android:stepSize="5"/>
+            <com.google.android.material.materialswitch.MaterialSwitch
+                android:id="@+id/swDeepAi"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="12dp"
+                android:text="@string/settings_deep_ai"/>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Hoe.Field"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/settings_country">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCountry"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textCapCharacters"
+                    android:maxLength="3"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Hoe.Field"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/settings_retention">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etRetention"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="number"
+                    android:maxLength="4"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
+                android:text="@string/settings_report_language"
+                android:textAppearance="@style/TextAppearance.Hoe.Body"/>
+            <com.google.android.material.button.MaterialButtonToggleGroup
+                android:id="@+id/reportLangGroup"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleSelection="true"
+                app:selectionRequired="true">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReportMg" style="@style/Hoe.OutlinedButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Malagasy"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReportFr" style="@style/Hoe.OutlinedButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Français"/>
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnReportEn" style="@style/Hoe.OutlinedButton"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="English"/>
+            </com.google.android.material.button.MaterialButtonToggleGroup>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSave"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/save"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+    <com.google.android.material.card.MaterialCardView
+        style="@style/Hoe.Card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp">
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:text="@string/settings_services"
+                android:textAppearance="@style/TextAppearance.Hoe.Subtitle"/>
+            <TextView
+                android:id="@+id/tvServer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
+            <TextView
+                android:id="@+id/tvServices"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingExtra="4dp"
+                android:textAppearance="@style/TextAppearance.Hoe.Body"
+                android:textSize="13sp"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</LinearLayout>
 </ScrollView>

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Comparaison entre pays : nom, barre proportionnelle, valeur en serif. Madagascar en cramoisi. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+    <TextView
+        android:id="@+id/tvCountry"
+        android:layout_width="96dp"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textAppearance="@style/TextAppearance.Hoe.Body"
+        android:textSize="13sp"/>
+    <LinearLayout
+        android:id="@+id/track"
+        android:layout_width="0dp"
+        android:layout_height="10dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
+        <View
+            android:id="@+id/fill"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:background="@color/line_strong"/>
+        <View
+            android:id="@+id/rest"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"/>
+    </LinearLayout>
+    <TextView
+        android:id="@+id/tvValue"
+        android:layout_width="76dp"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:textAppearance="@style/TextAppearance.Hoe.Figure.Small"
+        android:textSize="15sp"/>
+</LinearLayout>

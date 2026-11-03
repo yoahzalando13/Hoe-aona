@@ -1,54 +1,42 @@
 package com.hoeaona.mobile.ui;
 
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-import com.hoeaona.mobile.R;
-import com.hoeaona.mobile.model.OfficialSource;
+import com.hoeaona.mobile.model.OfficialContact;
+import com.hoeaona.mobile.util.ContactViews;
+
+import java.util.ArrayList;
 import java.util.List;
 
-public class SourceAdapter extends RecyclerView.Adapter<SourceAdapter.ViewHolder> {
-    private List<OfficialSource> sources;
+public class SourceAdapter extends RecyclerView.Adapter<SourceAdapter.SourceViewHolder> {
+    private List<OfficialContact> sources = new ArrayList<>();
 
-    public SourceAdapter(List<OfficialSource> sources) {
-        this.sources = sources;
-    }
-
-    public void setSources(List<OfficialSource> sources) {
-        this.sources = sources;
+    public void setSources(List<OfficialContact> sources) {
+        this.sources = sources != null ? sources : new ArrayList<>();
         notifyDataSetChanged();
     }
 
     @NonNull
     @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_source, parent, false);
-        return new ViewHolder(view);
+    public SourceViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        return new SourceViewHolder(ContactViews.inflate(parent));
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        OfficialSource source = sources.get(position);
-        holder.tvName.setText(source.getName() + (source.getAcronym() != null && !source.getAcronym().isEmpty() ? " (" + source.getAcronym() + ")" : ""));
-        holder.tvCategory.setText(source.getCategory());
-        holder.tvWebsite.setText(source.getWebsite());
+    public void onBindViewHolder(@NonNull SourceViewHolder holder, int position) {
+        ContactViews.bind(holder.itemView, sources.get(position));
     }
 
     @Override
     public int getItemCount() {
-        return sources != null ? sources.size() : 0;
+        return sources.size();
     }
 
-    static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvCategory, tvWebsite;
-        public ViewHolder(@NonNull View itemView) {
+    static class SourceViewHolder extends RecyclerView.ViewHolder {
+        SourceViewHolder(@NonNull View itemView) {
             super(itemView);
-            tvName = itemView.findViewById(R.id.tvSourceName);
-            tvCategory = itemView.findViewById(R.id.tvSourceCategory);
-            tvWebsite = itemView.findViewById(R.id.tvSourceWebsite);
         }
     }
 }

@@ -34,6 +34,8 @@ async def health():
                        configured=True, requires_key=False),
         ProviderStatus(key="imf", label="FMI (World Economic Outlook)", role="Statistiques de l'année en cours",
                        configured=True, requires_key=False),
+        ProviderStatus(key="postgis", label="PostgreSQL + PostGIS", role="Vérification physique (application mobile)",
+                       configured=bool(s.postgis_url), requires_key=True, signup_url="https://postgis.net/documentation/getting_started/"),
     ]
     return HealthOut(status="ok", mcp_mode=gw.mode, mcp_tools=gw.tool_names, mcp_errors=gw.errors,
                      providers=providers)

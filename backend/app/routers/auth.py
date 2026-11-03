@@ -9,6 +9,7 @@ from ..auth import (close_session, current_token_hash, current_user, hash_passwo
                     verify_password)
 from ..config import get_settings
 from ..db import get_db
+from ..geo import get_geo
 from ..schemas import AuthConfig, LoginIn, PasswordChange, ProfileUpdate, RegisterIn, UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["comptes"])
@@ -51,6 +52,10 @@ async def login(payload: LoginIn, response: Response):
 
 @router.post("/logout", status_code=204)
 async def logout(request: Request, response: Response):
+    token_hash = current_token_hash(request)
+    user = get_db().session_user(token_hash) if token_hash else None
+    if user and (geo := get_geo()):
+        geo.delete_location(user["id"])  # plus de demandes de vérification hors connexion
     close_session(request, response)
 
 

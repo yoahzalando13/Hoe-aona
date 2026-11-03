@@ -14,6 +14,15 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Adresse du backend : 10.0.2.2 désigne la machine hôte depuis l'émulateur.
+        // Sur un téléphone : ./gradlew assembleDebug -PhoeApiUrl=http://192.168.1.10:8000/
+        val apiUrl = (project.findProperty("hoeApiUrl") as String?) ?: "http://10.0.2.2:8000/"
+        buildConfigField("String", "API_BASE_URL", "\"$apiUrl\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
@@ -41,7 +50,8 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
-    implementation("com.caverock:androidsvg-android:1.4")
+    implementation("androidx.work:work-runtime:2.9.0")
+    implementation("org.osmdroid:osmdroid-android:6.1.18")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 
     testImplementation("junit:junit:4.13.2")

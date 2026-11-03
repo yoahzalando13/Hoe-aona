@@ -1,12 +1,49 @@
 package com.hoeaona.mobile;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.hoeaona.mobile.ui.*;
+import com.hoeaona.mobile.verify.LocationReporter;
+import com.hoeaona.mobile.verify.VerificationNotifier;
+import com.hoeaona.mobile.verify.VerifyFragment;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
+    public static final String EXTRA_TAB = "tab";
+    private static final long POLL_MS = 30_000;
+    private static final long LOCATION_MS = 5 * 60_000;
+
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+    private long lastLocationReport;
+
+    /** Application ouverte : notifications toutes les 30 s, position toutes les 5 min (si partagée). */
+    private final Runnable poller = new Runnable() {
+        @Override
+        public void run() {
+            if (System.currentTimeMillis() - lastLocationReport > LOCATION_MS) {
+                lastLocationReport = System.currentTimeMillis();
+                LocationReporter.reportAsync(MainActivity.this);
+            }
+            executor.execute(() -> VerificationNotifier.poll(getApplicationContext()));
+            handler.postDelayed(this, POLL_MS);
+        }
+    };
+
+    private final ActivityResultLauncher<String> notificationPermission = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), granted -> {});
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -15,10 +52,6 @@ public class MainActivity extends AppCompatActivity {
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
-        if (savedInstanceState == null) {
-            loadFragment(new FeedFragment());
-        }
-
         bottomNavigationView.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
             int itemId = item.getItemId();
@@ -26,12 +59,12 @@ public class MainActivity extends AppCompatActivity {
                 selectedFragment = new FeedFragment();
             } else if (itemId == R.id.nav_analyze) {
                 selectedFragment = new AnalyzeFragment();
-            } else if (itemId == R.id.nav_history) {
-                selectedFragment = new HistoryFragment();
-            } else if (itemId == R.id.nav_sources) {
-                selectedFragment = new SourcesFragment();
-            } else if (itemId == R.id.nav_settings) {
-                selectedFragment = new SettingsFragment();
+            } else if (itemId == R.id.nav_verify) {
+                selectedFragment = new VerifyFragment();
+            } else if (itemId == R.id.nav_workspace) {
+                selectedFragment = new WorkspaceFragment();
+            } else if (itemId == R.id.nav_more) {
+                selectedFragment = new MoreFragment();
             }
 
             if (selectedFragment != null) {
@@ -40,6 +73,35 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+
+        if (savedInstanceState == null) {
+            bottomNavigationView.setSelectedItemId(getIntent().getIntExtra(EXTRA_TAB, R.id.nav_feed));
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        lastLocationReport = 0;
+        handler.post(poller);
+    }
+
+    @Override
+    protected void onPause() {
+        handler.removeCallbacks(poller);
+        super.onPause();
+    }
+
+    @Override
+    protected void onDestroy() {
+        executor.shutdown();
+        super.onDestroy();
     }
 
     private void loadFragment(Fragment fragment) {

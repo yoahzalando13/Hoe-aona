@@ -10,62 +10,80 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:gravity="center"
-        android:padding="24dp">
+        android:padding="24dp"
+        android:gravity="center_horizontal">
 
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/langGroup"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            app:singleSelection="true"
+            app:selectionRequired="true">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLangMg" style="@style/Hoe.OutlinedButton"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="MG"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLangFr" style="@style/Hoe.OutlinedButton"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="FR"/>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLangEn" style="@style/Hoe.OutlinedButton"
+                android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="EN"/>
+        </com.google.android.material.button.MaterialButtonToggleGroup>
+
+        <!-- Logo identique au web (emblème et nom) : pas de titre en double. -->
         <ImageView
             android:id="@+id/ivLogo"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="190dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="12dp"
+            android:adjustViewBounds="true"
             android:contentDescription="@string/app_name"
-            android:layout_marginBottom="16dp"/>
+            android:src="@drawable/logo_hoe_aona"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Hoe-aona"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:textColor="@color/primary"
-            android:layout_marginBottom="8dp"/>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Fact-checking et vérification d'information"
-            android:textSize="14sp"
-            android:textColor="@color/gray_text"
+            android:layout_marginBottom="24dp"
             android:gravity="center"
-            android:layout_marginBottom="32dp"/>
+            android:text="@string/login_tagline"
+            android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
 
-        <com.google.android.material.textfield.TextInputLayout
+        <TextView
+            android:id="@+id/tvFirstAccount"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+            android:background="@color/primary_container"
+            android:padding="12dp"
+            android:text="@string/login_first_account"
+            android:textAppearance="@style/TextAppearance.Hoe.Body"
+            android:visibility="gone"/>
 
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Hoe.Field"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/login_email">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Email"
-                android:inputType="textEmailAddress"
-                android:maxLines="1"/>
+                android:inputType="textEmailAddress"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <com.google.android.material.textfield.TextInputLayout
+            style="@style/Hoe.Field"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-
+            android:hint="@string/login_password"
+            app:endIconMode="password_toggle">
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Mot de passe"
-                android:inputType="textPassword"
-                android:maxLines="1"/>
+                android:inputType="textPassword"/>
         </com.google.android.material.textfield.TextInputLayout>
 
         <LinearLayout
@@ -76,33 +94,27 @@
             android:visibility="gone">
 
             <com.google.android.material.textfield.TextInputLayout
+                style="@style/Hoe.Field"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-
+                android:hint="@string/login_display_name">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etDisplayName"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Nom d'affichage"
-                    android:inputType="textPersonName"
-                    android:maxLines="1"/>
+                    android:inputType="textPersonName|textCapWords"/>
             </com.google.android.material.textfield.TextInputLayout>
 
             <com.google.android.material.textfield.TextInputLayout
+                style="@style/Hoe.Field"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="16dp"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
-
+                android:hint="@string/login_organization">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etOrganization"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="Organisation / Média"
-                    android:inputType="text"
-                    android:maxLines="1"/>
+                    android:inputType="textCapWords"/>
             </com.google.android.material.textfield.TextInputLayout>
         </LinearLayout>
 
@@ -110,19 +122,51 @@
             android:id="@+id/btnLogin"
             android:layout_width="match_parent"
             android:layout_height="56dp"
-            android:text="Se connecter"
-            android:textSize="16sp"
-            android:layout_marginBottom="12dp"
-            app:backgroundTint="@color/primary"/>
+            android:layout_marginTop="8dp"
+            android:text="@string/login_submit"/>
 
         <TextView
             android:id="@+id/tvToggleMode"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Pas de compte ? S'inscrire"
-            android:textColor="@color/primary"
-            android:textSize="14sp"
-            android:padding="8dp"/>
+            android:padding="12dp"
+            android:text="@string/login_no_account"
+            android:textColor="@color/primary"/>
 
+        <TextView
+            android:id="@+id/tvServerToggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:padding="8dp"
+            android:text="@string/login_server"
+            android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
+
+        <LinearLayout
+            android:id="@+id/layoutServer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:visibility="gone">
+            <com.google.android.material.textfield.TextInputLayout
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/login_server_hint">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etServer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="textUri"/>
+            </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveServer"
+                style="@style/Hoe.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/save"/>
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>

@@ -1,11 +1,27 @@
 <resources>
-    <color name="primary">#B10D23</color>
-    <color name="primary_dark">#86101F</color>
-    <color name="primary_light">#D32F2F</color>
-    <color name="accent">#B10D23</color>
+    <!-- Couleurs du logo -->
+    <color name="brand">#B10D23</color>
+    <color name="brand_deep">#86101F</color>
+    <color name="brand_soft">#F7E3E5</color>
+    <color name="primary">@color/brand</color>
+    <color name="primary_dark">@color/brand_deep</color>
+    <color name="primary_light">#C7303F</color>
+    <color name="primary_container">@color/brand_soft</color>
+
+    <!-- Neutres chauds : encre et papier -->
     <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-    <color name="gray_bg">#F8F9FA</color>
-    <color name="gray_text">#6C757D</color>
-    <color name="gray_border">#DEE2E6</color>
+    <color name="paper">#FAF7F2</color>
+    <color name="gray_bg">@color/paper</color>
+    <color name="soft">#F3EEE8</color>
+    <color name="text_primary">#1F1A17</color>
+    <color name="ink2">#5A524D</color>
+    <color name="gray_text">#8A8079</color>
+    <color name="gray_border">#E6DED6</color>
+    <color name="line_strong">#CFC4B9</color>
+
+    <!-- Verdicts et scores (identiques au web) : vert forêt, ocre, cramoisi -->
+    <color name="verdict_good">#2E6B3C</color>
+    <color name="verdict_fair">#4F7A2E</color>
+    <color name="verdict_warn">#A5680A</color>
+    <color name="verdict_bad">#A3141F</color>
 </resources>

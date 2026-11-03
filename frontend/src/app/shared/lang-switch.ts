@@ -21,7 +21,7 @@ import { LANG, LANGS, Lang, TPipe, setLang } from '../core/i18n';
   styles: `
     .lang { display: inline-flex; gap: 2px; padding: 3px; border-radius: 18px; background: var(--soft); max-width: 100%; }
     button { border: 0; background: transparent; padding: 5px 11px; border-radius: 15px; font-size: 12.5px; color: var(--ink2); white-space: nowrap; }
-    button.on { background: var(--bg); color: var(--ink); font-weight: 500; box-shadow: 0 1px 3px rgba(22, 26, 51, .12); }
+    button.on { background: var(--bg); color: var(--ink); font-weight: 500; box-shadow: 0 1px 3px rgba(31, 26, 23, .12); }
     .compact button { padding: 4px 8px; font-size: 11.5px; }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush,

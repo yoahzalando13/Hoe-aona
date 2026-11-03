@@ -6,33 +6,40 @@
     android:orientation="vertical"
     android:background="@color/gray_bg">
 
-    <com.google.android.material.textfield.TextInputLayout
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="8dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+        android:padding="16dp"
+        android:paddingBottom="0dp"
+        android:text="@string/sources_intro"
+        android:textAppearance="@style/TextAppearance.Hoe.Meta"/>
 
+    <com.google.android.material.textfield.TextInputLayout
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.Dense"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:hint="@string/sources_search"
+        app:startIconDrawable="@drawable/ic_search">
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etSearchSources"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Rechercher une source officielle..."
-            android:maxLines="1"
-            android:inputType="text"/>
+            android:inputType="text"
+            android:maxLines="1"/>
     </com.google.android.material.textfield.TextInputLayout>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshSources"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerSources"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="8dp"
-            android:clipToPadding="false"/>
-
+            android:clipToPadding="false"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="12dp"/>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
-
 </LinearLayout>

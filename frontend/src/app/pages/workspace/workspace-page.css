@@ -3,13 +3,13 @@
 .head-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 .verdicts { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
-.stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; background: var(--soft); }
+.stack { display: flex; height: 12px; border-radius: 1px; overflow: hidden; gap: 1px; background: var(--soft); }
 .stack i { display: block; height: 100%; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12.5px; color: var(--ink2); }
-.legend i, .f i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.legend i, .f i { display: inline-block; width: 8px; height: 8px; border-radius: 1px; margin-right: 6px; }
 
 .toolbar { display: flex; gap: 10px; align-items: center; margin-top: 18px; }
-.search { flex: 1; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px; border-radius: 22px; background: var(--soft); color: var(--ink3); }
+.search { flex: 1; display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 14px; border-radius: 6px; background: var(--bg); border: 1px solid var(--line-strong); color: var(--ink3); }
 .search input { flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font-size: 14px; color: var(--ink); }
 
 .filters { display: flex; align-items: center; gap: 6px; margin-top: 10px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
@@ -18,7 +18,7 @@
 .f small { color: var(--ink3); font-size: 11px; }
 .f.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 .f.on small { color: inherit; opacity: .7; }
-.link-btn { border: 0; background: none; color: var(--indigo); font-size: 12.5px; font-weight: 500; padding: 8px 0 0; }
+.link-btn { border: 0; background: none; color: var(--brand); font-size: 12.5px; font-weight: 500; padding: 8px 0 0; }
 
 .count { margin: 16px 2px 8px; }
 .rows { list-style: none; margin: 0; padding: 0; background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius-m); }
@@ -31,7 +31,7 @@
 .s { font-size: 11.5px; color: var(--ink3); }
 .s .bad { color: var(--bad); }
 .tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.tagc { font-size: 11px; padding: 1px 8px; border-radius: 10px; background: var(--indigo-soft); color: var(--indigo); }
+.tagc { font-size: 11px; padding: 0 6px; border-radius: 3px; background: transparent; border: 1px solid var(--line-strong); color: var(--ink2); }
 .note { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: var(--ink3); }
 .wf { width: auto; height: 34px; padding: 0 10px; border-radius: 17px; font-size: 12.5px; background: var(--soft); border-color: transparent; }
 .acts { display: flex; }
