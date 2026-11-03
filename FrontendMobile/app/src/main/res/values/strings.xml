@@ -183,8 +183,6 @@
     <string name="admin_posts">Publications</string>
     <string name="admin_user_meta">%1$s · %2$s · %3$d analyses · %4$d publications</string>
     <string name="admin_inactive">désactivé</string>
-    <string name="admin_make_admin">Nommer administrateur</string>
-    <string name="admin_make_media">Retirer l\'administration</string>
     <string name="admin_activate">Réactiver</string>
     <string name="admin_deactivate">Désactiver</string>
     <string name="notifications_empty">Aucune notification</string>
@@ -325,6 +323,15 @@
     <string name="activity_kind_voice">Voix clonées (notes vocales)</string>
     <string name="activity_kind_video">Vidéos truquées</string>
     <string name="activity_kind_text">Textes IA présentés comme témoignages</string>
+    <string name="nav_news">Actualités</string>
+    <string name="account_reader">Lecteur</string>
+    <string name="account_media">Rédaction</string>
+    <string name="account_reader_help">Lire, aimer et commenter les actualités vérifiées.</string>
+    <string name="account_media_help">Analyser, publier, statistiques et vérification sur le terrain.</string>
+    <string name="feed_title_reader">Actualités vérifiées</string>
+    <string name="feed_reader_intro">Les rédactions membres vérifient les informations qui circulent. Le score sur 10 et le verdict résument chaque vérification : lisez, réagissez, commentez.</string>
+    <string name="admin_change_role">Changer le rôle</string>
+    <string name="role_reader">Lecteur</string>
     <plurals name="posts_count">
         <item quantity="one">%d publication</item>
         <item quantity="other">%d publications</item>

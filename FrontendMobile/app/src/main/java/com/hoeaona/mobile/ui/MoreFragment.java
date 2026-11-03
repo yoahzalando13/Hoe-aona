@@ -16,6 +16,8 @@ import com.hoeaona.mobile.api.ApiCallback;
 import com.hoeaona.mobile.api.ApiClient;
 import com.hoeaona.mobile.auth.LoginActivity;
 import com.hoeaona.mobile.model.User;
+import com.hoeaona.mobile.util.Lang;
+import com.hoeaona.mobile.util.Session;
 import com.hoeaona.mobile.verify.LocationReporter;
 
 /** Menu « Plus » : profil, notifications, annuaire, statistiques, paramètres, administration, déconnexion. */
@@ -43,6 +45,13 @@ public class MoreFragment extends Fragment {
         view.findViewById(R.id.itemProfile).setOnClickListener(v -> {
             if (me != null) startActivity(new Intent(requireContext(), ProfileActivity.class).putExtra(ProfileActivity.EXTRA_ID, me.id));
         });
+        // Lecteur : profil, langue et déconnexion uniquement.
+        if (Session.isReader(requireContext())) {
+            for (int id : new int[]{R.id.itemNotifications, R.id.itemSources, R.id.itemStats, R.id.itemSettings}) {
+                view.findViewById(id).setVisibility(View.GONE);
+            }
+        }
+        view.findViewById(R.id.itemLanguage).setOnClickListener(v -> chooseLanguage());
         view.findViewById(R.id.itemNotifications).setOnClickListener(v ->
                 startActivity(HostActivity.intent(requireContext(), HostActivity.NOTIFICATIONS)));
         view.findViewById(R.id.itemSources).setOnClickListener(v ->
@@ -59,6 +68,16 @@ public class MoreFragment extends Fragment {
         return view;
     }
 
+    private void chooseLanguage() {
+        String[] labels = {"Malagasy", "Français", "English"};
+        int current = java.util.Arrays.asList(Lang.CODES).indexOf(Lang.current());
+        new AlertDialog.Builder(requireContext()).setTitle(R.string.settings_language)
+                .setSingleChoiceItems(labels, current, (d, which) -> {
+                    d.dismiss();
+                    Lang.set(Lang.CODES[which]);
+                }).show();
+    }
+
     /** La déconnexion efface aussi la position côté serveur : plus aucune demande n'arrive. */
     private void logout() {
         LocationReporter.setEnabled(requireContext(), false);
@@ -73,6 +92,7 @@ public class MoreFragment extends Fragment {
             public void onFinally() {
                 // Après la réponse : sinon l'écran de connexion trouverait encore la session ouverte.
                 ApiClient.clearSession();
+                Session.clear(HoeApp.get());
                 HoeApp.get().startActivity(new Intent(HoeApp.get(), LoginActivity.class)
                         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
             }

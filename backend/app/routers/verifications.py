@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Uploa
 from fastapi.responses import FileResponse
 
 from .. import attestation
-from ..auth import current_user
+from ..auth import current_user, require_staff
 from ..config import get_settings
 from ..db import get_db
 from ..geo import GeoStore, get_geo
@@ -32,7 +32,7 @@ def mobile_client(x_hoe_client: str | None = Header(None)) -> None:
 
 
 router = APIRouter(prefix="/api/verifications", tags=["vérification physique"],
-                   dependencies=[Depends(mobile_client)])
+                   dependencies=[Depends(mobile_client), Depends(require_staff)])
 
 
 def geo() -> GeoStore:

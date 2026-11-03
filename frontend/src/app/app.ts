@@ -25,6 +25,14 @@ export class App {
   protected readonly moreOpen = signal(false);
 
   protected readonly nav = computed<NavItem[]>(() => {
+    // Lecteur : uniquement le fil et son profil (le menu « Plus » garde la déconnexion sur téléphone).
+    if (this.auth.isReader()) {
+      const me = this.auth.user();
+      return [
+        { path: '/fil', label: t('Actualités'), icon: 'feed', primary: true },
+        ...(me ? [{ path: `/profil/${me.id}`, label: t('Mon profil'), icon: 'users', primary: true }] : []),
+      ];
+    }
     const items: NavItem[] = [
       { path: '/fil', label: t('Fil'), icon: 'feed', primary: true },
       { path: '/analyser', label: t('Analyser'), icon: 'add', primary: true },

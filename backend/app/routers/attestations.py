@@ -12,11 +12,11 @@ from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import PlainTextResponse
 
 from .. import attestation
-from ..auth import current_user
+from ..auth import current_user, require_staff
 from ..geo import get_geo
 from ..schemas import AttestationOut
 
-router = APIRouter(prefix="/api/attestations", tags=["certificats de constat"])
+router = APIRouter(prefix="/api/attestations", tags=["certificats de constat"], dependencies=[Depends(require_staff)])
 
 
 def _out(rep: dict[str, Any], photo_matches: bool | None = None) -> AttestationOut:

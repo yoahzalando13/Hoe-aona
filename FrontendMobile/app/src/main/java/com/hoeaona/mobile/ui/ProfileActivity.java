@@ -86,7 +86,8 @@ public class ProfileActivity extends AppCompatActivity {
                 tvOrganization.setVisibility(u.organization == null || u.organization.isEmpty() ? View.GONE : View.VISIBLE);
                 tvBio.setText(u.bio);
                 tvBio.setVisibility(u.bio == null || u.bio.isEmpty() ? View.GONE : View.VISIBLE);
-                String role = "admin".equals(u.role) ? getString(R.string.role_admin) : getString(R.string.role_media);
+                String role = getString("admin".equals(u.role) ? R.string.role_admin
+                        : "reader".equals(u.role) ? R.string.role_reader : R.string.role_media);
                 tvMeta.setText(getString(R.string.profile_meta, role, Format.date(u.created_at),
                         getResources().getQuantityString(R.plurals.posts_count, u.posts_count, u.posts_count)));
             }

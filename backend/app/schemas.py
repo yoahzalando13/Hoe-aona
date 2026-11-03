@@ -210,7 +210,7 @@ class AnalysisResult(BaseModel):
 
 
 Workflow = Literal["a_traiter", "en_revue", "valide", "publie", "archive"]
-Role = Literal["media", "admin"]
+Role = Literal["media", "admin", "reader"]  # reader : lecteur, fil uniquement
 
 
 class ArticleEdit(BaseModel):
@@ -361,6 +361,7 @@ class RegisterIn(BaseModel):
     password: str = Field(..., min_length=8, max_length=200)
     display_name: str = Field(..., min_length=2, max_length=80)
     organization: str = Field("", max_length=120)
+    account_type: Literal["media", "reader"] = "media"  # « reader » : lecteur du fil, sans fonctions de rédaction
 
     @field_validator("email")
     @classmethod

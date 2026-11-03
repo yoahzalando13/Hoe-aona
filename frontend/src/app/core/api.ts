@@ -80,7 +80,7 @@ export class Api {
   authConfig() { return this.http.get<AuthConfig>(`${this.base}/auth/config`); }
   me() { return this.http.get<User>(`${this.base}/auth/me`); }
   login(email: string, password: string) { return this.http.post<User>(`${this.base}/auth/login`, { email, password }); }
-  register(payload: { email: string; password: string; display_name: string; organization: string }) {
+  register(payload: { email: string; password: string; display_name: string; organization: string; account_type: 'media' | 'reader' }) {
     return this.http.post<User>(`${this.base}/auth/register`, payload);
   }
   logout() { return this.http.post<void>(`${this.base}/auth/logout`, {}); }

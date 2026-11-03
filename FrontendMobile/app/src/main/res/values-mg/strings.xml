@@ -183,8 +183,6 @@
     <string name="admin_posts">Lahatsoratra</string>
     <string name="admin_user_meta">%1$s · %2$s · fanadihadiana %3$d · lahatsoratra %4$d</string>
     <string name="admin_inactive">tsy mandeha</string>
-    <string name="admin_make_admin">Atao mpitantana</string>
-    <string name="admin_make_media">Esory ny fitantanana</string>
     <string name="admin_activate">Avereno</string>
     <string name="admin_deactivate">Ajanony</string>
     <string name="notifications_empty">Tsy misy fampahafantarana</string>
@@ -325,6 +323,15 @@
     <string name="activity_kind_voice">Feo nalaina tahaka</string>
     <string name="activity_kind_video">Horonantsary sandoka</string>
     <string name="activity_kind_text">Lahatsoratra IA aseho ho fijoroana vavolombelona</string>
+    <string name="nav_news">Vaovao</string>
+    <string name="account_reader">Mpamaky</string>
+    <string name="account_media">Gazety</string>
+    <string name="account_reader_help">Hamaky, hankafy ary hanome hevitra momba ny vaovao voamarina.</string>
+    <string name="account_media_help">Famakafakana, famoahana, antontan\'isa ary fanamarinana an-toerana.</string>
+    <string name="feed_title_reader">Vaovao voamarina</string>
+    <string name="feed_reader_intro">Ireo gazety mpikambana no manamarina ny vaovao miparitaka. Ny isa amin\'ny 10 sy ny didy no mamintina ny fanamarinana: vakio, ankafizo, omeo hevitra.</string>
+    <string name="admin_change_role">Hanova ny andraikitra</string>
+    <string name="role_reader">Mpamaky</string>
     <plurals name="posts_count">
         <item quantity="one">lahatsoratra %d</item>
         <item quantity="other">lahatsoratra %d</item>

@@ -17,6 +17,7 @@ import com.hoeaona.mobile.api.ApiClient;
 import com.hoeaona.mobile.model.AuthConfig;
 import com.hoeaona.mobile.model.User;
 import com.hoeaona.mobile.util.Lang;
+import com.hoeaona.mobile.util.Session;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -31,6 +32,7 @@ public class LoginActivity extends AppCompatActivity {
     private TextView tvToggleMode, tvFirstAccount;
     private LinearLayout layoutRegisterFields, layoutServer;
     private boolean isRegisterMode = false;
+    private MaterialButtonToggleGroup accountTypeGroup;
     private AuthConfig authConfig;
 
     @Override
@@ -70,6 +72,10 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         tvToggleMode.setOnClickListener(v -> setRegisterMode(!isRegisterMode));
+        accountTypeGroup = findViewById(R.id.accountTypeGroup);
+        accountTypeGroup.addOnButtonCheckedListener((g, id, checked) -> {
+            if (checked) refreshAccountType();
+        });
         btnLogin.setOnClickListener(v -> submit());
         checkSession();
     }
@@ -80,6 +86,7 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {
+                    Session.save(LoginActivity.this, response.body());
                     openMain();
                 }
             }
@@ -93,6 +100,7 @@ public class LoginActivity extends AppCompatActivity {
                 authConfig = body;
                 tvToggleMode.setVisibility(body.allow_registration ? View.VISIBLE : View.GONE);
                 tvFirstAccount.setVisibility(body.has_users ? View.GONE : View.VISIBLE);
+                refreshAccountType();
                 if (!body.has_users) setRegisterMode(true);
             }
 
@@ -139,7 +147,8 @@ public class LoginActivity extends AppCompatActivity {
                 return;
             }
             payload.put("display_name", displayName);
-            payload.put("organization", text(etOrganization));
+            payload.put("organization", isReaderChoice() ? "" : text(etOrganization));
+            payload.put("account_type", isReaderChoice() ? "reader" : "media");
             call = ApiClient.getApiService().register(payload);
         } else {
             call = ApiClient.getApiService().login(payload);
@@ -148,6 +157,7 @@ public class LoginActivity extends AppCompatActivity {
         call.enqueue(new ApiCallback<User>(this) {
             @Override
             public void onSuccess(User body) {
+                Session.save(LoginActivity.this, body);
                 openMain();
             }
 
@@ -161,6 +171,20 @@ public class LoginActivity extends AppCompatActivity {
                 return false;
             }
         });
+    }
+
+    /** Le premier compte (administrateur) est toujours une rédaction : pas de choix à proposer. */
+    private boolean isReaderChoice() {
+        return authConfig != null && authConfig.has_users && accountTypeGroup.getCheckedButtonId() == R.id.btnTypeReader;
+    }
+
+    private void refreshAccountType() {
+        boolean choice = authConfig != null && authConfig.has_users;
+        accountTypeGroup.setVisibility(choice ? View.VISIBLE : View.GONE);
+        TextView help = findViewById(R.id.tvAccountTypeHelp);
+        help.setVisibility(choice ? View.VISIBLE : View.GONE);
+        help.setText(isReaderChoice() ? R.string.account_reader_help : R.string.account_media_help);
+        findViewById(R.id.tilOrganization).setVisibility(isReaderChoice() ? View.GONE : View.VISIBLE);
     }
 
     private void openMain() {

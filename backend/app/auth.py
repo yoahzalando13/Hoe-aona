@@ -66,6 +66,14 @@ def current_user(request: Request) -> dict[str, Any]:
     return user
 
 
+def require_staff(user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
+    """Fonctions de rédaction (analyses, statistiques, annuaire, vérification physique, paramètres) :
+    refusées aux comptes lecteurs, qui n'ont accès qu'au fil (lecture, J'apprécie, commentaires)."""
+    if user["role"] == "reader":
+        raise HTTPException(403, "Réservé aux rédactions : un compte lecteur peut lire et commenter le fil")
+    return user
+
+
 def require_admin(user: dict[str, Any] = Depends(current_user)) -> dict[str, Any]:
     if user["role"] != "admin":
         raise HTTPException(403, "Réservé aux administrateurs")

@@ -18,7 +18,7 @@ from typing import Any
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 
-from ..auth import current_user
+from ..auth import current_user, require_staff
 
 from ..config import get_settings
 from ..db import get_db
@@ -29,7 +29,7 @@ from ..services.llm import LLMClient
 from ..services.pipeline import load_preferences, run_analysis
 from ..services.textutils import truncate
 
-router = APIRouter(prefix="/api/analyses", tags=["analyses"])
+router = APIRouter(prefix="/api/analyses", tags=["analyses"], dependencies=[Depends(require_staff)])
 
 KINDS = {
     "image": {"image/jpeg", "image/png", "image/webp", "image/gif", "image/heic"},

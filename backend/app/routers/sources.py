@@ -5,11 +5,11 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from ..auth import current_user, require_admin
+from ..auth import current_user, require_admin, require_staff
 from ..db import get_db
 from ..schemas import OfficialSourceIn, OfficialSourceOut
 
-router = APIRouter(prefix="/api/sources", tags=["sources officielles"])
+router = APIRouter(prefix="/api/sources", tags=["sources officielles"], dependencies=[Depends(require_staff)])
 
 
 @router.get("", response_model=list[OfficialSourceOut])

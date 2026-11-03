@@ -700,4 +700,12 @@ export const EN: Record<string, string> = {
   "oct.": "Oct",
   "nov.": "Nov",
   "déc.": "Dec",
+  "Actualités": "News",
+  "Actualités vérifiées": "Verified news",
+  "Analyser, publier, statistiques et vérification sur le terrain.": "Analyse, publish, statistics and on-site verification.",
+  "Les rédactions membres vérifient les informations qui circulent et publient ici leurs conclusions. Le score sur 10 et le verdict résument chaque vérification : lisez, réagissez, commentez.": "Member newsrooms check the information that circulates and publish their conclusions here. The score out of 10 and the verdict sum up each check: read, react, comment.",
+  "Lire et commenter les actualités vérifiées.": "Read and comment on verified news.",
+  "Rédaction": "Newsroom",
+  "Type de compte": "Account type",
+  "Vérifié par Hoe-aona? · {verdict}": "Checked by Hoe-aona? · {verdict}",
 };

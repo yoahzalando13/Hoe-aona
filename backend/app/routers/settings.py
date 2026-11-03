@@ -3,12 +3,12 @@ from typing import Any
 
 from fastapi import APIRouter, Depends
 
-from ..auth import current_user
+from ..auth import current_user, require_staff
 from ..db import get_db
 from ..schemas import Preferences
 from ..services.pipeline import load_preferences
 
-router = APIRouter(prefix="/api/settings", tags=["paramètres"])
+router = APIRouter(prefix="/api/settings", tags=["paramètres"], dependencies=[Depends(require_staff)])
 
 
 @router.get("", response_model=Preferences)

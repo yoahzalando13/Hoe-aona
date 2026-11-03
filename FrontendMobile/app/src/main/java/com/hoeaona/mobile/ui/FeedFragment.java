@@ -20,6 +20,7 @@ import com.hoeaona.mobile.api.ApiCallback;
 import com.hoeaona.mobile.api.ApiClient;
 import com.hoeaona.mobile.model.Post;
 import com.hoeaona.mobile.model.PostPage;
+import com.hoeaona.mobile.util.Session;
 
 public class FeedFragment extends Fragment {
     private static final int PAGE = 20;
@@ -66,6 +67,12 @@ public class FeedFragment extends Fragment {
             return false;
         });
         fabCreatePost.setOnClickListener(v -> startActivity(new Intent(requireContext(), CreatePostActivity.class)));
+        // Lecteur : lire, aimer, commenter ; pas de publication.
+        boolean reader = Session.isReader(requireContext());
+        fabCreatePost.setVisibility(reader ? View.GONE : View.VISIBLE);
+        TextView title = view.findViewById(R.id.tvFeedTitle);
+        title.setText(reader ? R.string.feed_title_reader : R.string.feed_title);
+        view.findViewById(R.id.tvReaderIntro).setVisibility(reader ? View.VISIBLE : View.GONE);
         return view;
     }
 

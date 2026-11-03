@@ -15,6 +15,8 @@ export class Auth {
 
   readonly user = signal<User | null>(null);
   readonly isAdmin = computed(() => this.user()?.role === 'admin');
+  /** Compte lecteur : interface réduite au fil d'actualité. */
+  readonly isReader = computed(() => this.user()?.role === 'reader');
 
   /** Charge la session une seule fois (cookie HttpOnly côté serveur). */
   ensureLoaded(): Promise<User | null> {
@@ -31,7 +33,8 @@ export class Auth {
     return this.api.login(email, password).pipe(tap((u) => this.set(u)));
   }
 
-  register(payload: { email: string; password: string; display_name: string; organization: string }): Observable<User> {
+  register(payload: { email: string; password: string; display_name: string; organization: string;
+                      account_type: 'media' | 'reader' }): Observable<User> {
     return this.api.register(payload).pipe(tap((u) => this.set(u)));
   }
 
@@ -43,6 +46,7 @@ export class Auth {
 
   /** La langue choisie dans les paramètres du compte s'applique sur tous les appareils. */
   private syncLang(): void {
+    if (this.user()?.role === 'reader') return; // les lecteurs gardent la langue choisie dans le navigateur
     this.api.getSettings().pipe(catchError(() => of(null))).subscribe((prefs) => applyLang(prefs?.ui_language));
   }
 
@@ -71,6 +75,14 @@ export const adminGuard: CanActivateFn = async () => {
   const router = inject(Router);
   const user = await auth.ensureLoaded();
   return user?.role === 'admin' ? true : router.createUrlTree(['/fil']);
+};
+
+/** Pages de rédaction : un lecteur est renvoyé vers le fil. */
+export const staffGuard: CanActivateFn = async () => {
+  const auth = inject(Auth);
+  const router = inject(Router);
+  const user = await auth.ensureLoaded();
+  return user && user.role !== 'reader' ? true : router.createUrlTree(['/fil']);
 };
 
 export const guestGuard: CanActivateFn = async () => {

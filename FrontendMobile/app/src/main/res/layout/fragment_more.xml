@@ -31,6 +31,11 @@
             android:drawableStart="@drawable/ic_person"
             android:text="@string/more_profile"/>
         <TextView
+            android:id="@+id/itemLanguage"
+            style="@style/Hoe.MenuItem"
+            android:drawableStart="@drawable/ic_web"
+            android:text="@string/settings_language"/>
+        <TextView
             android:id="@+id/itemNotifications"
             style="@style/Hoe.MenuItem"
             android:drawableStart="@drawable/ic_bell"

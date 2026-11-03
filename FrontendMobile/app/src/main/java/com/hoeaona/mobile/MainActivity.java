@@ -12,7 +12,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.hoeaona.mobile.api.ApiCallback;
+import com.hoeaona.mobile.api.ApiClient;
+import com.hoeaona.mobile.model.User;
 import com.hoeaona.mobile.ui.*;
+import com.hoeaona.mobile.util.Session;
 import com.hoeaona.mobile.verify.LocationReporter;
 import com.hoeaona.mobile.verify.VerificationNotifier;
 import com.hoeaona.mobile.verify.VerifyFragment;
@@ -28,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private long lastLocationReport;
+    private boolean reader;
 
     /** Application ouverte : notifications toutes les 30 s, position toutes les 5 min (si partagée). */
     private final Runnable poller = new Runnable() {
@@ -51,6 +56,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        reader = Session.isReader(this);
+        if (reader) {
+            // Lecteur : actualités et menu « Plus » seulement, aucune fonction de rédaction.
+            bottomNavigationView.getMenu().clear();
+            bottomNavigationView.inflateMenu(R.menu.bottom_nav_reader);
+        }
 
         bottomNavigationView.setOnItemSelectedListener(item -> {
             Fragment selectedFragment = null;
@@ -78,7 +89,20 @@ public class MainActivity extends AppCompatActivity {
             bottomNavigationView.setSelectedItemId(getIntent().getIntExtra(EXTRA_TAB, R.id.nav_feed));
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+        // Le rôle a pu changer (administrateur) : on recharge l'interface si besoin.
+        ApiClient.getApiService().getMe().enqueue(new ApiCallback<User>(this) {
+            @Override
+            public void onSuccess(User me) {
+                boolean nowReader = "reader".equals(me.role);
+                Session.save(MainActivity.this, me);
+                if (nowReader != reader) recreate();
+            }
+
+            @Override
+            public void onError(int code, String message) {}
+        });
+
+        if (!reader && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
             notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS);
@@ -89,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         lastLocationReport = 0;
-        handler.post(poller);
+        if (!reader) handler.post(poller);  // vérification physique : réservée aux rédactions
     }
 
     @Override

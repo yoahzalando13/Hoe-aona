@@ -55,6 +55,15 @@
   }
 
   @if (p.analysis; as a) {
+    @if (auth.isReader()) {
+    <div class="analysis static">
+      <app-score-ring [score]="a.global_score" [size]="48" [compact]="true" />
+      <span class="a-t">
+        <span class="a-k">{{ 'Vérifié par Hoe-aona? · {verdict}' | t: { verdict: verdictLabel(a.verdict) } }}</span>
+        <span class="a-n">{{ a.title }}</span>
+      </span>
+    </div>
+    } @else {
     <a class="analysis" [routerLink]="['/resultat', a.id]">
       <app-score-ring [score]="a.global_score" [size]="48" [compact]="true" />
       <span class="a-t">
@@ -63,6 +72,7 @@
       </span>
       <app-icon name="chevron" [size]="18" />
     </a>
+    }
   }
 
   <footer class="actions">

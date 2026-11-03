@@ -11,7 +11,7 @@
         <h1>{{ p.display_name }}
           @if (p.role === 'admin') { <span class="badge neutral">{{ 'Administration' | t }}</span> }
         </h1>
-        <p class="org">{{ p.organization || ('Personnel média' | t) }}</p>
+        <p class="org">{{ p.role === 'reader' ? ('Lecteur' | t) : (p.organization || ('Personnel média' | t)) }}</p>
         @if (p.bio) { <p class="bio">{{ p.bio }}</p> }
         <p class="muted">{{ 'Membre depuis {date}' | t: { date: p.created_at | date: 'MMMM y' } }} · {{ p.posts_count | plural: '{n} publication' : '{n} publications' }}</p>
       </div>
@@ -60,7 +60,7 @@
         <app-post-card [post]="post" (changed)="replace($event)" (removed)="drop($event)" />
       } @empty {
         <div class="empty"><p>{{ isMe() ? ('Vous n’avez encore rien publié.' | t) : ('Aucune publication pour l’instant.' | t) }}</p>
-          @if (isMe()) { <a class="btn btn-primary" routerLink="/fil" style="margin-top:12px">{{ 'Publier sur le fil' | t }}</a> }
+          @if (isMe() && !auth.isReader()) { <a class="btn btn-primary" routerLink="/fil" style="margin-top:12px">{{ 'Publier sur le fil' | t }}</a> }
         </div>
       }
     </div>

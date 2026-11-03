@@ -32,7 +32,7 @@ async def register(payload: RegisterIn, response: Response):
     if db.get_user_by_email(payload.email):
         raise HTTPException(409, "Un compte existe déjà avec cette adresse")
     user = db.create_user(payload.email, hash_password(payload.password), payload.display_name,
-                          payload.organization, "admin" if first else "media")
+                          payload.organization, "admin" if first else payload.account_type)
     if first:
         db.claim_orphan_analyses(user["id"])
     open_session(response, user["id"])

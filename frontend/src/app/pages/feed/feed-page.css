@@ -24,3 +24,8 @@
 .skeleton { display: flex; flex-direction: column; gap: 12px; }
 .skeleton span { height: 160px; border-radius: var(--radius-m); background: linear-gradient(90deg, var(--soft), var(--bg), var(--soft)); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
 @keyframes shimmer { to { background-position: -200% 0; } }
+
+/* Lecteur : encart d'accueil à la place du formulaire de publication */
+.reader-intro { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center; justify-content: space-between;
+  padding: 12px 0 14px; margin-bottom: 14px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--line); }
+.reader-intro p { flex: 1 1 320px; font-size: 14px; color: var(--ink2); }

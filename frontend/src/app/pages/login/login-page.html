@@ -23,10 +23,21 @@
 
     <form (ngSubmit)="submit()" #f="ngForm">
       @if (mode() === 'register') {
+        @if (config()?.has_users) {
+        <fieldset class="account-type">
+          <legend>{{ 'Type de compte' | t }}</legend>
+          <label [class.on]="accountType === 'reader'"><input type="radio" name="type" value="reader" [(ngModel)]="accountType">
+            <b>{{ 'Lecteur' | t }}</b><small>{{ 'Lire et commenter les actualités vérifiées.' | t }}</small></label>
+          <label [class.on]="accountType === 'media'"><input type="radio" name="type" value="media" [(ngModel)]="accountType">
+            <b>{{ 'Rédaction' | t }}</b><small>{{ 'Analyser, publier, statistiques et vérification sur le terrain.' | t }}</small></label>
+        </fieldset>
+        }
         <label class="field"><span>{{ 'Nom affiché' | t }}</span>
           <input class="input" name="name" [(ngModel)]="displayName" required minlength="2" maxlength="80" autocomplete="name"></label>
+        @if (accountType === 'media' || !config()?.has_users) {
         <label class="field"><span>{{ 'Média ou rédaction' | t }}</span>
           <input class="input" name="org" [(ngModel)]="organization" maxlength="120" [placeholder]="'ex. Radio Fahazavana' | t" autocomplete="organization"></label>
+        }
       }
       <label class="field"><span>{{ 'Adresse e-mail' | t }}</span>
         <input class="input" type="email" name="email" [(ngModel)]="email" required autocomplete="email"></label>

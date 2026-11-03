@@ -129,6 +129,17 @@ Il s'agit d'un certificat inspiré de C2PA, pas d'une implémentation C2PA. L'EX
 
 **Construire l'application** : ouvrez `FrontendMobile/` dans Android Studio. Par défaut, l'application vise `http://10.0.2.2:8000/` (la machine hôte vue depuis l'émulateur). Pour un téléphone, changez l'adresse dans « Serveur » sur l'écran de connexion, ou construisez avec `-PhoeApiUrl=http://IP:8000/`. Le HTTP en clair n'est autorisé qu'en debug.
 
+## Données de démonstration
+
+```bash
+cd backend
+python -m app.demo_feed            # fil média : 6 rédactions fictives, 6 analyses, 10 publications
+python -m app.demo_feed --reset    # recrée
+python -m app.demo_feed --remove   # supprime tout ce qui a été créé
+```
+
+Les comptes (`rindra`, `hery`, `fara`, `tojo`, `mialy`, `lova` `@demo.hoe-aona.mg`, mot de passe `demo-hoe-aona`) portent la mention « Compte fictif de démonstration ». Les médias, les personnes et les sources sont inventés, et les liens de preuve pointent vers un domaine de démonstration. Les publications sont réparties sur les dix derniers jours, avec fiches verdict en image, analyses jointes, mentions J'apprécie et commentaires.
+
 ## Tests de raisonnement
 
 En plus des preuves, chaque affirmation passe par des tests de raisonnement affichés dans la page Résultat :
@@ -146,6 +157,7 @@ Garde-fous : un test ne compte que s'il cite des preuves réellement collectées
 ## Comptes, fil média et back office
 
 - **Premier compte = administrateur.** Au premier lancement, l'écran de connexion propose de créer le compte administrateur ; les analyses existantes lui sont rattachées. Les comptes suivants ont le rôle « personnel média ».
+- **Compte lecteur.** À l'inscription, on choisit **Lecteur** ou **Rédaction**. Un lecteur n'a qu'une interface d'actualités : il lit le fil, met des mentions J'apprécie, commente et gère son profil. Il ne peut ni publier, ni analyser, ni consulter les statistiques, l'annuaire, les paramètres ou la vérification physique. Les analyses jointes aux publications lui montrent le score et le verdict, sans la page Résultat. Côté serveur, la règle est appliquée par la dépendance `require_staff` (réponse 403). Un administrateur peut changer le type d'un compte.
 - **Données cloisonnées.** Chaque analyse appartient à son auteur, et les préférences (poids, seuils, pays, rétention) sont propres à chaque compte. Une analyse n'est visible par les autres, en lecture seule, que lorsqu'elle est jointe à une publication du fil.
 - **Fil média** (`/fil`) : publications avec texte, image (8 Mo max) et analyse jointe ; mentions « J'apprécie », commentaires, modification et suppression par l'auteur, profils publics.
 - **Mon espace** (`/espace`) : statistiques personnelles, recherche, filtres par verdict, suivi éditorial (à traiter, en revue, validée, publiée, archivée) et étiquettes, notes internes, publication sur le fil, export CSV.

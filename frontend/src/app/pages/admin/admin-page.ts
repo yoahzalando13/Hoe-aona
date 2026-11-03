@@ -90,7 +90,7 @@ export class AdminPage {
   }
 
   protected setRole(u: AdminUser, role: Role): void {
-    this.updateUser(u, { role }, role === 'admin' ? `${u.display_name} est administrateur` : `${u.display_name} est personnel média`);
+    this.updateUser(u, { role }, role === 'admin' ? `${u.display_name} est administrateur` : role === 'reader' ? `${u.display_name} est lecteur` : `${u.display_name} est personnel média`);
   }
 
   protected toggleActive(u: AdminUser): void {

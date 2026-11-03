@@ -11,6 +11,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.widget.PopupMenu;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.tabs.TabLayout;
 import com.google.gson.JsonObject;
@@ -98,10 +99,21 @@ public class AdminFragment extends Fragment {
         View row = LayoutInflater.from(requireContext()).inflate(R.layout.item_admin_user, layoutUsers, false);
         ((TextView) row.findViewById(R.id.tvName)).setText(u.display_name + (u.active ? "" : " — " + getString(R.string.admin_inactive)));
         ((TextView) row.findViewById(R.id.tvMeta)).setText(getString(R.string.admin_user_meta, u.email,
-                u.isAdmin() ? getString(R.string.role_admin) : getString(R.string.role_media), u.analyses_count, u.posts_count));
+                getString(u.isAdmin() ? R.string.role_admin : "reader".equals(u.role) ? R.string.role_reader : R.string.role_media),
+                u.analyses_count, u.posts_count));
         MaterialButton role = row.findViewById(R.id.btnRole);
-        role.setText(u.isAdmin() ? R.string.admin_make_media : R.string.admin_make_admin);
-        role.setOnClickListener(v -> update(u, "role", u.isAdmin() ? "media" : "admin"));
+        role.setText(R.string.admin_change_role);
+        role.setOnClickListener(v -> {
+            PopupMenu menu = new PopupMenu(requireContext(), v);
+            menu.getMenu().add(0, 0, 0, R.string.role_media);
+            menu.getMenu().add(0, 1, 1, R.string.role_reader);
+            menu.getMenu().add(0, 2, 2, R.string.role_admin);
+            menu.setOnMenuItemClickListener(item -> {
+                update(u, "role", new String[]{"media", "reader", "admin"}[item.getItemId()]);
+                return true;
+            });
+            menu.show();
+        });
         MaterialButton active = row.findViewById(R.id.btnActive);
         active.setText(u.active ? R.string.admin_deactivate : R.string.admin_activate);
         active.setOnClickListener(v -> update(u, "active", null));

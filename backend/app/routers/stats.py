@@ -12,12 +12,12 @@ from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
-from ..auth import current_user
+from ..auth import current_user, require_staff
 from ..mcp.gateway import get_gateway
 from ..services import demo_activity
 from ..tools import imf, worldbank
 
-router = APIRouter(prefix="/api/stats", tags=["statistiques"])
+router = APIRouter(prefix="/api/stats", tags=["statistiques"], dependencies=[Depends(require_staff)])
 
 Provider = Literal["worldbank", "imf"]
 CACHE_TTL = 6 * 3600

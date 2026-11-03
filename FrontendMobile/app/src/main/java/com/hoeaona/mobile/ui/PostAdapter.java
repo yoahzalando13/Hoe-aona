@@ -15,6 +15,7 @@ import com.hoeaona.mobile.R;
 import com.hoeaona.mobile.model.Post;
 import com.hoeaona.mobile.util.Format;
 import com.hoeaona.mobile.util.ImageLoader;
+import com.hoeaona.mobile.util.Session;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -86,7 +87,12 @@ public class PostAdapter extends RecyclerView.Adapter<PostAdapter.PostViewHolder
             holder.tvAnalysisVerdict.setText(c.getString(R.string.score_verdict, Format.score(post.analysis.global_score),
                     Format.verdict(c, post.analysis.verdict)));
             holder.tvAnalysisVerdict.setTextColor(c.getColor(Format.verdictColor(post.analysis.verdict)));
-            holder.cardAnalysis.setOnClickListener(v -> actions.openAnalysis(post.analysis.id));
+            if (Session.isReader(c)) {
+                holder.cardAnalysis.setOnClickListener(null);
+                holder.cardAnalysis.setClickable(false);
+            } else {
+                holder.cardAnalysis.setOnClickListener(v -> actions.openAnalysis(post.analysis.id));
+            }
         } else {
             holder.cardAnalysis.setVisibility(View.GONE);
         }

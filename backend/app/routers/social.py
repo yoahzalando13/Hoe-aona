@@ -8,7 +8,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
-from ..auth import current_user
+from ..auth import current_user, require_staff
 from ..config import get_settings
 from ..db import get_db
 from ..schemas import CommentIn, CommentOut, PostOut, PostPage, PostUpdate, PublicUser
@@ -50,7 +50,7 @@ async def feed(q: str = "", author: str | None = None, limit: int = Query(20, ge
 
 @router.post("/posts", response_model=PostOut, status_code=201)
 async def create_post(body: str = Form(""), analysis_id: str = Form(""), image: UploadFile | None = File(None),
-                      user: dict[str, Any] = Depends(current_user)):
+                      user: dict[str, Any] = Depends(require_staff)):
     db = get_db()
     body = body.strip()
     analysis_id = analysis_id.strip() or None

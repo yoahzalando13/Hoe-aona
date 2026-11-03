@@ -5,7 +5,8 @@ export type GlobalVerdict = 'fiable' | 'plutot_fiable' | 'a_verifier' | 'douteux
 export type Status = 'pending' | 'running' | 'done' | 'error';
 export type InputKind = 'text' | 'image' | 'document' | 'audio' | 'url';
 export type Workflow = 'a_traiter' | 'en_revue' | 'valide' | 'publie' | 'archive';
-export type Role = 'media' | 'admin';
+/** reader : lecteur du fil (lire, aimer, commenter), sans fonctions de rédaction. */
+export type Role = 'media' | 'admin' | 'reader';
 
 export interface Preferences {
   weight_source: number;

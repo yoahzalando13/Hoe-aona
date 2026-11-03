@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output, signal } fro
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Api, errorMessage } from '../core/api';
+import { Auth } from '../core/auth';
 import { avatarTone, initials, kindIcon, relativeTime, verdictLabel } from '../core/format';
 import { Comment, Post } from '../core/models';
 import { MarkdownPipe } from '../core/markdown';
@@ -24,6 +25,7 @@ export class PostCard {
   readonly removed = output<string>();
 
   private readonly api = inject(Api);
+  protected readonly auth = inject(Auth);
 
   protected readonly initials = initials;
   protected readonly avatarTone = avatarTone;

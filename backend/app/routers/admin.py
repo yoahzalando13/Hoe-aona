@@ -36,7 +36,7 @@ async def update_user(user_id: str, payload: AdminUserUpdate, admin: dict[str, A
     if not target:
         raise HTTPException(404, "Compte introuvable")
     removes_admin = target["role"] == "admin" and target["active"] and (
-        payload.role == "media" or payload.active is False)
+        payload.role in ("media", "reader") or payload.active is False)
     if removes_admin and db.count_admins() <= 1:
         raise HTTPException(409, "Il doit rester au moins un administrateur actif")
     fields: dict[str, Any] = {}

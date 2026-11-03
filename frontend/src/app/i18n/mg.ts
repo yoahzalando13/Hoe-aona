@@ -700,4 +700,12 @@ export const MG: Record<string, string> = {
   "oct.": "Okt.",
   "nov.": "Nov.",
   "déc.": "Des.",
+  "Actualités": "Vaovao",
+  "Actualités vérifiées": "Vaovao voamarina",
+  "Analyser, publier, statistiques et vérification sur le terrain.": "Famakafakana, famoahana, antontan'isa ary fanamarinana an-toerana.",
+  "Les rédactions membres vérifient les informations qui circulent et publient ici leurs conclusions. Le score sur 10 et le verdict résument chaque vérification : lisez, réagissez, commentez.": "Ireo gazety mpikambana no manamarina ny vaovao miparitaka ary mamoaka eto ny vokatra. Ny isa amin'ny 10 sy ny didy no mamintina ny fanamarinana tsirairay: vakio, ankafizo, omeo hevitra.",
+  "Lire et commenter les actualités vérifiées.": "Hamaky sy hanome hevitra momba ny vaovao voamarina.",
+  "Rédaction": "Gazety",
+  "Type de compte": "Karazana kaonty",
+  "Vérifié par Hoe-aona? · {verdict}": "Nohamarinin'i Hoe-aona? · {verdict}",
 };

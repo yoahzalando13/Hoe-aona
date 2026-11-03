@@ -36,7 +36,7 @@
         <span class="avatar" [class]="avatarTone(me.id)">{{ initials(me.display_name) }}</span>
         <span class="me-t">
           <span class="me-n">{{ me.display_name }}</span>
-          <span class="me-o">{{ me.organization || (me.role === 'admin' ? ('Administration' | t) : ('Personnel média' | t)) }}</span>
+          <span class="me-o">{{ me.role === 'reader' ? ('Lecteur' | t) : (me.organization || (me.role === 'admin' ? ('Administration' | t) : ('Personnel média' | t))) }}</span>
         </span>
       </a>
       <button type="button" class="icon-btn logout" (click)="auth.logout()" [attr.aria-label]="'Se déconnecter' | t" [title]="'Se déconnecter' | t">

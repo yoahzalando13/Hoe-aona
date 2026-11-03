@@ -31,6 +31,8 @@ export class LoginPage {
   protected password = '';
   protected displayName = '';
   protected organization = '';
+  /** Les lecteurs s'inscrivent par défaut ; le premier compte (administrateur) est toujours une rédaction. */
+  protected accountType: 'media' | 'reader' = 'reader';
 
   constructor() {
     this.api.authConfig().subscribe({
@@ -54,7 +56,9 @@ export class LoginPage {
       ? this.auth.login(this.email.trim(), this.password)
       : this.auth.register({
           email: this.email.trim(), password: this.password,
-          display_name: this.displayName.trim(), organization: this.organization.trim(),
+          display_name: this.displayName.trim(),
+          organization: this.accountType === 'media' || !this.config()?.has_users ? this.organization.trim() : '',
+          account_type: this.config()?.has_users ? this.accountType : 'media',
         });
     req.subscribe({
       next: () => {

@@ -5,6 +5,7 @@ import { Api, errorMessage } from '../../core/api';
 import { Auth } from '../../core/auth';
 import { avatarTone, initials, verdictLabel } from '../../core/format';
 import { AnalysisListItem, Post } from '../../core/models';
+import { LangSwitch } from '../../shared/lang-switch';
 import { Icon } from '../../shared/icon';
 import { PostCard } from '../../shared/post-card';
 import { TPipe, t } from '../../core/i18n';
@@ -14,7 +15,7 @@ const MAX_IMAGE = 8 * 1024 * 1024;
 
 @Component({
   selector: 'app-feed-page',
-  imports: [FormsModule, RouterLink, Icon, PostCard, TPipe],
+  imports: [LangSwitch, FormsModule, RouterLink, Icon, PostCard, TPipe],
   templateUrl: './feed-page.html',
   styleUrl: './feed-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -53,9 +54,11 @@ export class FeedPage {
 
   constructor() {
     this.load();
-    this.api.listAnalyses({ limit: 100 }).subscribe({
-      next: (page) => this.analyses.set(page.items.filter((a) => a.status === 'done')),
-    });
+    if (!this.auth.isReader()) {
+      this.api.listAnalyses({ limit: 100 }).subscribe({
+        next: (page) => this.analyses.set(page.items.filter((a) => a.status === 'done')),
+      });
+    }
     effect(() => {
       const id = this.analyse();
       if (!id) return;

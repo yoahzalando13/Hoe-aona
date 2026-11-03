@@ -72,6 +72,7 @@
             <label class="visually-hidden" [for]="'role-' + u.id">{{ 'Rôle de {nom}' | t: { nom: u.display_name } }}</label>
             <select class="input role" [id]="'role-' + u.id" [ngModel]="u.role" (ngModelChange)="setRole(u, $event)">
               <option ngValue="media">{{ 'Personnel média' | t }}</option>
+              <option ngValue="reader">{{ 'Lecteur' | t }}</option>
               <option ngValue="admin">{{ 'Administrateur' | t }}</option>
             </select>
             <button type="button" class="btn btn-sm" [class.btn-danger]="u.active" (click)="toggleActive(u)">
