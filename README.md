@@ -6,6 +6,57 @@ Les rédactions disposent aussi d'un **mini réseau social** pour publier leurs 
 
 L'analyse du besoin, la méthode de calcul et les limites sont décrites dans [docs/ANALYSE.md](docs/ANALYSE.md).
 
+## Démarrage rapide
+
+### Prérequis
+
+- Python 3.11+
+- Node.js 20.19+ / 22.12+
+- Docker Desktop ou Docker Engine (optionnel, pour le lancement complet)
+
+### Backend local
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate      # Windows : .venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+uvicorn app.main:app --reload
+```
+
+- API : http://localhost:8000
+- Swagger / OpenAPI : http://localhost:8000/docs
+
+### Frontend local
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+- Interface : http://localhost:4200
+- Les requêtes vers `/api` sont proxyées vers le backend via `frontend/proxy.conf.json`.
+
+### Docker
+
+```bash
+cp backend/.env.example backend/.env
+docker compose up --build
+```
+
+L'ensemble est servi sur http://localhost:8000, avec un conteneur PostGIS démarré automatiquement par `docker-compose.yml`.
+
+### Données de démonstration
+
+```bash
+cd backend
+python -m app.demo_feed
+```
+
+Cette commande crée un fil média de démonstration avec comptes fictifs, analyses et publications d'exemple.
+
 ## Architecture
 
 ```
@@ -61,14 +112,14 @@ L'application complète est servie sur http://localhost:8000.
 
 Pour chaque affirmation, le back office interroge en parallèle :
 
-| Source | Ce qu'elle apporte | Clé |
-| --- | --- | --- |
-| Tavily limité aux **sites officiels et à la presse malgaches** | INSTAT, BFM, MEF, BNGRC, CENI, HCC… et L'Express, Midi Madagasikara, Newsmada… | `TAVILY_API_KEY` |
-| NewsData.io (`country=mg`) | Presse malgache des dernières 48 h | `NEWSDATA_API_KEY` |
-| GDELT DOC 2.0 | Presse mondiale des 3 derniers mois (requêtes mises en file : 1 toutes les 5 s) | non |
-| Tavily (web général), Wikipedia | Contexte | `TAVILY_API_KEY` |
-| **FMI** (World Economic Outlook) et Banque mondiale | Statistiques officielles : estimation de l'année en cours (FMI) et dernière valeur publiée (Banque mondiale), avec série, date de mise à jour et lien vers la page Madagascar | non |
-| **Fil média de la plateforme** | Publications des rédactions membres proches de l'affirmation (fiabilité 55 %, 65 % avec une analyse jointe) ; elles ne suffisent jamais seules | non |
+| Source                                                         | Ce qu'elle apporte                                                                                                                                                            | Clé                |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| Tavily limité aux **sites officiels et à la presse malgaches** | INSTAT, BFM, MEF, BNGRC, CENI, HCC… et L'Express, Midi Madagasikara, Newsmada…                                                                                                | `TAVILY_API_KEY`   |
+| NewsData.io (`country=mg`)                                     | Presse malgache des dernières 48 h                                                                                                                                            | `NEWSDATA_API_KEY` |
+| GDELT DOC 2.0                                                  | Presse mondiale des 3 derniers mois (requêtes mises en file : 1 toutes les 5 s)                                                                                               | non                |
+| Tavily (web général), Wikipedia                                | Contexte                                                                                                                                                                      | `TAVILY_API_KEY`   |
+| **FMI** (World Economic Outlook) et Banque mondiale            | Statistiques officielles : estimation de l'année en cours (FMI) et dernière valeur publiée (Banque mondiale), avec série, date de mise à jour et lien vers la page Madagascar | non                |
+| **Fil média de la plateforme**                                 | Publications des rédactions membres proches de l'affirmation (fiabilité 55 %, 65 % avec une analyse jointe) ; elles ne suffisent jamais seules                                | non                |
 
 Chaque preuve indique son lien, son extrait, sa date de publication, sa fiabilité, l'outil qui l'a trouvée et un badge **Source officielle** le cas échéant. Une statistique de plus de deux ans est signalée.
 
@@ -105,12 +156,12 @@ Le vérificateur peut renoncer : la demande est alors proposée de nouveau. Le d
 - Le nom du vérificateur n'est montré au demandeur qu'après acceptation. L'application le signale avant d'accepter.
 - Les routes `/api/verifications/*` exigent l'en-tête `X-Hoe-Client: android`, envoyé par l'application. C'est une restriction d'usage, pas une mesure de sécurité.
 
-| Variable | Défaut | Rôle |
-| --- | --- | --- |
-| `POSTGIS_URL` | vide | `postgresql://…` avec l'extension PostGIS ; vide = fonction désactivée |
-| `VERIFICATION_RADIUS_M` | `2000` | Rayon de notification |
-| `VERIFICATION_HOURS` | `24` | Durée de vie d'une demande sans preneur |
-| `LOCATION_MAX_AGE_MINUTES` | `120` | Âge maximal d'une position prise en compte |
+| Variable                   | Défaut | Rôle                                                                   |
+| -------------------------- | ------ | ---------------------------------------------------------------------- |
+| `POSTGIS_URL`              | vide   | `postgresql://…` avec l'extension PostGIS ; vide = fonction désactivée |
+| `VERIFICATION_RADIUS_M`    | `2000` | Rayon de notification                                                  |
+| `VERIFICATION_HOURS`       | `24`   | Durée de vie d'une demande sans preneur                                |
+| `LOCATION_MAX_AGE_MINUTES` | `120`  | Âge maximal d'une position prise en compte                             |
 
 `docker compose up` démarre aussi un conteneur `postgis/postgis`. Les notifications arrivent par interrogation : toutes les 30 s quand l'application est ouverte, toutes les 15 min sinon (WorkManager). Application fermée, la position n'est mise à jour que si l'utilisateur accorde la localisation en arrière-plan.
 
@@ -144,13 +195,13 @@ Les comptes (`rindra`, `hery`, `fara`, `tojo`, `mialy`, `lova` `@demo.hoe-aona.m
 
 En plus des preuves, chaque affirmation passe par des tests de raisonnement affichés dans la page Résultat :
 
-| Test | Principe | Effet sur le score |
-| --- | --- | --- |
-| **Contre-exemple** | Une recherche dédiée (`counter_query`) cherche un cas où l'affirmation ne se vérifie pas. Les affirmations **absolues** (« tous », « aucun », « jamais », « 100 % »…) sont repérées : un seul contre-exemple fiable suffit à les réfuter. | absolue réfutée : plafond 3/10 ; sinon -1 ou -0,5 |
-| **Raisonnement par l'absurde** | On suppose l'affirmation vraie, on en déduit 1 ou 2 conséquences nécessaires, recherchées elles aussi, puis confrontées aux preuves. Une conséquence démentie rend l'hypothèse intenable. | -1,5 (démentie par une source fiable), -0,75, ou +0,5 si toutes sont vérifiées |
-| **Ordre de grandeur** | Calcul déterministe : valeur annoncée contre statistique officielle la plus récente (FMI, Banque mondiale). | écart d'un facteur 3 ou plus : plafond 3/10 ; ±0,5 |
-| **Cohérence interne** | L'énoncé seul se contredit-il (chiffres incompatibles, chronologie impossible) ? | -0,5 |
-| **Procédés rhétoriques** | Généralisation hâtive, autorité anonyme, faux dilemme, chiffre sans source… | aucun (information du lecteur) |
+| Test                           | Principe                                                                                                                                                                                                                                  | Effet sur le score                                                             |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Contre-exemple**             | Une recherche dédiée (`counter_query`) cherche un cas où l'affirmation ne se vérifie pas. Les affirmations **absolues** (« tous », « aucun », « jamais », « 100 % »…) sont repérées : un seul contre-exemple fiable suffit à les réfuter. | absolue réfutée : plafond 3/10 ; sinon -1 ou -0,5                              |
+| **Raisonnement par l'absurde** | On suppose l'affirmation vraie, on en déduit 1 ou 2 conséquences nécessaires, recherchées elles aussi, puis confrontées aux preuves. Une conséquence démentie rend l'hypothèse intenable.                                                 | -1,5 (démentie par une source fiable), -0,75, ou +0,5 si toutes sont vérifiées |
+| **Ordre de grandeur**          | Calcul déterministe : valeur annoncée contre statistique officielle la plus récente (FMI, Banque mondiale).                                                                                                                               | écart d'un facteur 3 ou plus : plafond 3/10 ; ±0,5                             |
+| **Cohérence interne**          | L'énoncé seul se contredit-il (chiffres incompatibles, chronologie impossible) ?                                                                                                                                                          | -0,5                                                                           |
+| **Procédés rhétoriques**       | Généralisation hâtive, autorité anonyme, faux dilemme, chiffre sans source…                                                                                                                                                               | aucun (information du lecteur)                                                 |
 
 Garde-fous : un test ne compte que s'il cite des preuves réellement collectées ([E…], [S…]) ; sinon il est déclaré « non concluant ». L'ajustement total est borné entre -3 et +1 point, et le score avant et après les tests est affiché. Sans LLM, seuls l'ordre de grandeur et le contre-exemple (tiré des preuves qui contredisent) sont calculés.
 
@@ -163,52 +214,52 @@ Garde-fous : un test ne compte que s'il cite des preuves réellement collectées
 - **Mon espace** (`/espace`) : statistiques personnelles, recherche, filtres par verdict, suivi éditorial (à traiter, en revue, validée, publiée, archivée) et étiquettes, notes internes, publication sur le fil, export CSV.
 - **Administration** (`/admin`) : statistiques de la plateforme, changement de rôle, désactivation de compte (sessions fermées aussitôt), masquage ou suppression des publications. Il reste toujours au moins un administrateur actif.
 
-| Variable             | Défaut  | Rôle                                                                 |
-| -------------------- | ------- | -------------------------------------------------------------------- |
-| `ALLOW_REGISTRATION` | `true`  | `false` ferme les inscriptions (le premier compte reste possible)    |
-| `SESSION_DAYS`       | `30`    | Durée de validité d'une session                                      |
-| `COOKIE_SECURE`      | `false` | À passer à `true` derrière HTTPS                                     |
+| Variable             | Défaut  | Rôle                                                              |
+| -------------------- | ------- | ----------------------------------------------------------------- |
+| `ALLOW_REGISTRATION` | `true`  | `false` ferme les inscriptions (le premier compte reste possible) |
+| `SESSION_DAYS`       | `30`    | Durée de validité d'une session                                   |
+| `COOKIE_SECURE`      | `false` | À passer à `true` derrière HTTPS                                  |
 
 ## Clés API gratuites
 
 Sans aucune clé, l'application fonctionne en mode dégradé. Wikipedia, GDELT et la Banque mondiale restent actifs, les affirmations sont repérées par heuristique et l'article suit un modèle fixe. Une clé LLM (Gemini ou Groq) change nettement la qualité des résultats.
 
-| Variable                          | Service                 | Rôle                                 | Inscription                                            |
-| --------------------------------- | ----------------------- | ------------------------------------ | ------------------------------------------------------ |
-| `GEMINI_API_KEY`                  | Gemini (AI Studio)      | Analyse, vision, rédaction           | https://aistudio.google.com/apikey                     |
-| `GROQ_API_KEY`                    | Groq                    | Analyse, vision, transcription audio | https://console.groq.com/keys                          |
-| `TAVILY_API_KEY`                  | Tavily                  | Recherche web, sites malgaches       | https://app.tavily.com                                 |
-| `NEWSDATA_API_KEY`                | NewsData.io             | Presse malgache récente              | https://newsdata.io/register                           |
-| `SIGHTENGINE_API_USER` / `SECRET` | Sightengine             | Détection d'images générées          | https://sightengine.com                                |
-| `OCR_SPACE_API_KEY`               | OCR.space               | OCR de secours                       | https://ocr.space/ocrapi                               |
+| Variable                          | Service            | Rôle                                 | Inscription                        |
+| --------------------------------- | ------------------ | ------------------------------------ | ---------------------------------- |
+| `GEMINI_API_KEY`                  | Gemini (AI Studio) | Analyse, vision, rédaction           | https://aistudio.google.com/apikey |
+| `GROQ_API_KEY`                    | Groq               | Analyse, vision, transcription audio | https://console.groq.com/keys      |
+| `TAVILY_API_KEY`                  | Tavily             | Recherche web, sites malgaches       | https://app.tavily.com             |
+| `NEWSDATA_API_KEY`                | NewsData.io        | Presse malgache récente              | https://newsdata.io/register       |
+| `SIGHTENGINE_API_USER` / `SECRET` | Sightengine        | Détection d'images générées          | https://sightengine.com            |
+| `OCR_SPACE_API_KEY`               | OCR.space          | OCR de secours                       | https://ocr.space/ocrapi           |
 
 La transcription audio nécessite `GROQ_API_KEY`. L'état de chaque service est visible dans la page Paramètres.
 
 ## API
 
-| Méthode   | Route                                      | Rôle                                                                         |
-| --------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
-| POST      | `/api/analyses`                            | Lance une analyse (multipart : `text`, `urls` en JSON, `files`) ; répond 202 |
-| GET       | `/api/analyses/{id}`                       | État, progression et résultat                                                |
-| GET       | `/api/analyses?q=&verdict=&workflow=&tag=` | Analyses du compte connecté                                                  |
-| PATCH     | `/api/analyses/{id}`                       | Titre, notes, étiquettes, suivi éditorial                                    |
-| GET       | `/api/analyses/stats` · `/export.csv`      | Statistiques et export de l'espace personnel                                 |
-| DELETE    | `/api/analyses/{id}`                       | Supprime l'analyse et ses fichiers                                           |
-| POST      | `/api/analyses/{id}/article`               | Rédige à nouveau l'article                                                   |
-| GET       | `/api/analyses/{id}/article.md` ou `.html` | Export de l'article                                                          |
-| GET / PUT | `/api/settings`                            | Préférences du compte                                                        |
-| POST      | `/api/auth/register` · `login` · `logout`  | Comptes et sessions ; `GET/PATCH /api/auth/me`, `POST /api/auth/password`    |
-| GET/POST  | `/api/posts`                               | Fil (`q`, `author`) ; publication multipart (`body`, `image`, `analysis_id`) |
-| PATCH/DEL | `/api/posts/{id}`                          | Modification (auteur), suppression (auteur ou admin)                         |
-| PUT/DEL   | `/api/posts/{id}/like`                     | J'apprécie                                                                   |
-| GET/POST  | `/api/posts/{id}/comments`                 | Commentaires                                                                 |
-| GET       | `/api/users/{id}`                          | Profil public                                                                |
-| …         | `/api/admin/stats`, `users`, `posts`       | Administration (rôle admin)                                                  |
-| GET       | `/api/health`                              | Mode MCP, outils, services configurés                                        |
-| PUT/DEL   | `/api/verifications/location`              | Mobile : partager ou effacer sa position (jamais relue par l'API)            |
-| POST/GET  | `/api/verifications`, `/nearby`, `/mine`, `/assigned` | Mobile : demandes de vérification physique                        |
-| POST      | `/api/verifications/{id}/accept` · `decline` · `release` · `report` · `cancel` | Mobile : cycle de vie d'une demande          |
-| GET/POST  | `/api/verifications/notifications` · `/read` | Mobile : notifications (`undelivered=true` pour le téléphone)            |
+| Méthode   | Route                                                                          | Rôle                                                                         |
+| --------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
+| POST      | `/api/analyses`                                                                | Lance une analyse (multipart : `text`, `urls` en JSON, `files`) ; répond 202 |
+| GET       | `/api/analyses/{id}`                                                           | État, progression et résultat                                                |
+| GET       | `/api/analyses?q=&verdict=&workflow=&tag=`                                     | Analyses du compte connecté                                                  |
+| PATCH     | `/api/analyses/{id}`                                                           | Titre, notes, étiquettes, suivi éditorial                                    |
+| GET       | `/api/analyses/stats` · `/export.csv`                                          | Statistiques et export de l'espace personnel                                 |
+| DELETE    | `/api/analyses/{id}`                                                           | Supprime l'analyse et ses fichiers                                           |
+| POST      | `/api/analyses/{id}/article`                                                   | Rédige à nouveau l'article                                                   |
+| GET       | `/api/analyses/{id}/article.md` ou `.html`                                     | Export de l'article                                                          |
+| GET / PUT | `/api/settings`                                                                | Préférences du compte                                                        |
+| POST      | `/api/auth/register` · `login` · `logout`                                      | Comptes et sessions ; `GET/PATCH /api/auth/me`, `POST /api/auth/password`    |
+| GET/POST  | `/api/posts`                                                                   | Fil (`q`, `author`) ; publication multipart (`body`, `image`, `analysis_id`) |
+| PATCH/DEL | `/api/posts/{id}`                                                              | Modification (auteur), suppression (auteur ou admin)                         |
+| PUT/DEL   | `/api/posts/{id}/like`                                                         | J'apprécie                                                                   |
+| GET/POST  | `/api/posts/{id}/comments`                                                     | Commentaires                                                                 |
+| GET       | `/api/users/{id}`                                                              | Profil public                                                                |
+| …         | `/api/admin/stats`, `users`, `posts`                                           | Administration (rôle admin)                                                  |
+| GET       | `/api/health`                                                                  | Mode MCP, outils, services configurés                                        |
+| PUT/DEL   | `/api/verifications/location`                                                  | Mobile : partager ou effacer sa position (jamais relue par l'API)            |
+| POST/GET  | `/api/verifications`, `/nearby`, `/mine`, `/assigned`                          | Mobile : demandes de vérification physique                                   |
+| POST      | `/api/verifications/{id}/accept` · `decline` · `release` · `report` · `cancel` | Mobile : cycle de vie d'une demande                                          |
+| GET/POST  | `/api/verifications/notifications` · `/read`                                   | Mobile : notifications (`undelivered=true` pour le téléphone)                |
 
 ## Le serveur MCP
 

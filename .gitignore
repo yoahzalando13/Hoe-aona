@@ -1,2 +1,59 @@
+# Python
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.Python
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.venv/
+venv/
+env/
+ENV/
+*.egg-info/
+
+# Environnements
+.env
+.env.*
+!.env.example
+backend/.env
+backend/.env.*
+!backend/.env.example
+
+# Node / Angular
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+
+# Android / Gradle
+FrontendMobile/.gradle/
+FrontendMobile/local.properties
+FrontendMobile/.idea/
+FrontendMobile/build/
+FrontendMobile/app/build/
+
+# Builds / données locales
+backend/data/
+backend/uploads/
+backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
+
+# Éditeur / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Docker local
+compose.override.yml
 
